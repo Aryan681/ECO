@@ -12,9 +12,7 @@ const authRoutes = require('./src/routes/authRoutes');
 const projectRoutes = require('./src/routes/projectRoutes');
 const rateLimiter = require('./src/middlewares/rateLimiter');
 const { setupSocketIO } = require('./src/utils/socketio');
-const dashboardRoutes = require ("./src/routes/dashboardRoutes")
-const profileRoutes = require ("./src/routes/profileRoutes")
-const CodeEditRoutes = require ("./src/routes/CodeEditRoutes")
+const userRoutes = require('./src/routes/userRoute');
 
 // Initialize Express app
 const app = express();
@@ -32,9 +30,7 @@ app.use(rateLimiter);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/dashboard', dashboardRoutes)
-app.use('/Profile', profileRoutes)
-app.use('/Code', CodeEditRoutes)
+app.use('/users', userRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -76,4 +72,4 @@ async function startServer() {
 
 startServer();
 
-module.exports = app; // For testing purposes
+module.exports = app;

@@ -2,6 +2,8 @@
 const authService = require('../services/authService');
 const { validateLoginData, validateRegisterData } = require('../utils/datavalidator');
 const logger = require('../utils/logger');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const register = async (req, res, next) => {
   try {
@@ -191,8 +193,10 @@ const logout = async (req, res, next) => {
 const getProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    
-    // Get user with profile
+
+    console.log("Fetching profile for user:", userId); // Debugging log
+
+    // Fetch user along with profile & projects
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -209,41 +213,48 @@ const getProfile = async (req, res, next) => {
         }
       }
     });
-    
+
+    // If user not found
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
-    
-    // Format user data for response
-    const userData = {
-      id: user.id,
-      email: user.email,
-      createdAt: user.createdAt,
-      profile: user.profile ? {
-        id: user.profile.id,
-        firstName: user.profile.firstName,
-        lastName: user.profile.lastName,
-        bio: user.profile.bio,
-        profileImage: user.profile.profileImage
-      } : null,
-      projects: user.projects,
-      githubConnected: !!user.githubAccessToken
-    };
-    
-    res.status(200).json({
+
+    // Ensure profile exists
+    const profile = user.profile
+      ? {
+          id: user.profile.id,
+          firstName: user.profile.firstName || '',
+          lastName: user.profile.lastName || '',
+          bio: user.profile.bio || '',
+          profileImage: user.profile.profileImage || '',
+        }
+      : null;
+
+    // Return formatted response
+    return res.status(200).json({
       success: true,
+      message: "Profile fetched successfully",
       data: {
-        user: userData
+        user: {
+          id: user.id,
+          email: user.email,
+          createdAt: user.createdAt,
+          profile,
+          projects: user.projects,
+          githubConnected: !!user.githubAccessToken
+        }
       }
     });
+
   } catch (error) {
     logger.error('Get profile error:', error);
-    next(error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 
 module.exports = {
   register,

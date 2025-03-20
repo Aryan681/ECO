@@ -19,14 +19,15 @@ model User {
 }
 
 model Profile {
-  id        String   @id @default(uuid())
-  firstName String?
-  lastName  String?
-  bio       String?
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-   profileImage String?
+  id           String   @id @default(uuid())
+  firstName    String?
+  lastName     String?
+  bio          String?
+  profileImage String?
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
 }
+
 
 model Project {
   id          String   @id @default(uuid())
