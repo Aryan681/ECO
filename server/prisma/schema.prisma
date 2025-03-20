@@ -17,6 +17,7 @@ model User {
   profile   Profile?  
   githubAccessToken String? 
 }
+
 model Profile {
   id        String   @id @default(uuid())
   firstName String?
@@ -24,6 +25,7 @@ model Profile {
   bio       String?
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id])
+   profileImage String?
 }
 
 model Project {
@@ -46,3 +48,4 @@ model Log {
   projectId String
   project   Project  @relation(fields: [projectId], references: [id])
 }
+
