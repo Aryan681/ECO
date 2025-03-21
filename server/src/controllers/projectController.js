@@ -31,17 +31,16 @@ const getUserProjects = async (req, res, next) => {
   }
 };
 
-// Get a specific project by ID
-const getProjectById = async (req, res, next) => {
+const getProjectByName = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const projectName = req.params.name; // Assuming the project name is passed as a parameter
+    const userId = req.user.id; // Ensure the project belongs to the logged-in user
+    const projectName = req.params.name; // Get the project name from the request parameters
 
-    // Use regex to search for the project by name
-    const project = await prisma.project.findFirst({
+    // Use `startsWith` to search for projects by name (case-insensitive)
+    const projects = await prisma.project.findMany({
       where: {
         name: {
-          contains: projectName, // Case-insensitive search
+          startsWith: projectName, // Match names that start with the search term
           mode: 'insensitive' // Ensure case-insensitive matching
         },
         userId: userId // Ensure the project belongs to the user
@@ -56,19 +55,21 @@ const getProjectById = async (req, res, next) => {
       }
     });
 
-    if (!project) {
+    // If no projects are found, return a 404 error
+    if (projects.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Project not found'
+        message: 'No projects found with the given name'
       });
     }
 
+    // Return the list of matching projects
     res.status(200).json({
       success: true,
-      data: project
+      data: projects
     });
   } catch (error) {
-    logger.error('Get project by ID error:', error);
+    logger.error('Get project by name error:', error);
     next(error);
   }
 };
@@ -308,10 +309,10 @@ const addProjectLog = async (req, res, next) => {
 // Get logs for a project
 const getProjectLogs = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const projectName = req.params.name; // Assuming the project name is passed as a parameter
+    const userId = req.user.id; // Ensure the project belongs to the logged-in user
+    const projectName = req.params.name; // Get the project name from the request parameters
 
-    // Find the project first
+    // Find the project by name
     const existingProject = await prisma.project.findFirst({
       where: {
         name: {
@@ -322,7 +323,7 @@ const getProjectLogs = async (req, res, next) => {
       }
     });
 
-    // Check if project exists and belongs to user
+    // Check if the project exists
     if (!existingProject) {
       return res.status(404).json({
         success: false,
@@ -330,6 +331,7 @@ const getProjectLogs = async (req, res, next) => {
       });
     }
 
+    // Ensure the project belongs to the authenticated user
     if (existingProject.userId !== userId) {
       return res.status(403).json({
         success: false,
@@ -338,36 +340,39 @@ const getProjectLogs = async (req, res, next) => {
     }
 
     // Get logs with pagination
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page) || 1; // Default to page 1
+    const limit = parseInt(req.query.limit) || 20; // Default to 20 logs per page
+    const skip = (page - 1) * limit; // Calculate the number of logs to skip
 
+    // Fetch logs for the project
     const logs = await prisma.log.findMany({
       where: {
-        projectName: existingProject.name // Use the project name to fetch logs
+        projectId: existingProject.id // Use the project ID to fetch logs
       },
       orderBy: {
-        timestamp: 'desc'
+        timestamp: 'desc' // Order logs by timestamp in descending order
       },
-      skip,
-      take: limit
+      skip, // Skip logs for pagination
+      take: limit // Limit the number of logs per page
     });
 
+    // Count the total number of logs for the project
     const totalLogs = await prisma.log.count({
       where: {
-        projectName: existingProject.name // Use the project name to count logs
+        projectId: existingProject.id // Use the project ID to count logs
       }
     });
 
+    // Return the logs with pagination details
     res.status(200).json({
       success: true,
       data: {
         logs,
         pagination: {
-          total: totalLogs,
-          page,
-          limit,
-          pages: Math.ceil(totalLogs / limit)
+          total: totalLogs, // Total number of logs
+          page, // Current page
+          limit, // Logs per page
+          pages: Math.ceil(totalLogs / limit) // Total number of pages
         }
       }
     });
@@ -379,7 +384,7 @@ const getProjectLogs = async (req, res, next) => {
 
 module.exports = {
   getUserProjects,
-  getProjectById,
+  getProjectByName,
   createProject,
   updateProject,
   deleteProject,

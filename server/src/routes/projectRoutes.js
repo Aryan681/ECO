@@ -10,7 +10,7 @@
     // Project routes
     router.get('/', projectController.getUserProjects);
     router.post('/', projectController.createProject);
-    router.get('/:id', projectController.getProjectById);
+    router.get('/:name', projectController.getProjectByName)
     router.put('/:id', projectController.updateProject);
     router.delete('/:id', projectController.deleteProject);
 
