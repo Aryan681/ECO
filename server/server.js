@@ -14,7 +14,8 @@ const rateLimiter = require('./src/middlewares/rateLimiter');
 const { setupSocketIO } = require('./src/utils/socketio');
 const userRoutes = require('./src/routes/userRoute');
 const redisClient = require('./src/utils/redisClient');
-
+const profileRoutes = require('./src/routes/profileRoutes'); 
+const path = require('path');
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,11 +28,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/users', userRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

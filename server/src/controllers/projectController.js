@@ -35,42 +35,37 @@ const getUserProjects = async (req, res, next) => {
 const getProjectById = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const projectId = req.params.id;
-    
-    const project = await prisma.project.findUnique({
+    const projectName = req.params.name; // Assuming the project name is passed as a parameter
+
+    // Use regex to search for the project by name
+    const project = await prisma.project.findFirst({
       where: {
-        id: projectId
+        name: {
+          contains: projectName, // Case-insensitive search
+          mode: 'insensitive' // Ensure case-insensitive matching
+        },
+        userId: userId // Ensure the project belongs to the user
       },
       include: {
         logs: {
           orderBy: {
             timestamp: 'desc'
           },
-          take: 100 // Limit logs to most recent 100
+          take: 100 // Limit logs to the most recent 100
         }
       }
     });
-    
-    // Check if project exists and belongs to user
+
     if (!project) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
     }
-    
-    if (project.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to access this project'
-      });
-    }
-    
+
     res.status(200).json({
       success: true,
-      data: {
-        project
-      }
+      data: project
     });
   } catch (error) {
     logger.error('Get project by ID error:', error);
@@ -314,15 +309,19 @@ const addProjectLog = async (req, res, next) => {
 const getProjectLogs = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const projectName = req.params.name;
-    
+    const projectName = req.params.name; // Assuming the project name is passed as a parameter
+
     // Find the project first
-    const existingProject = await prisma.project.findUnique({
+    const existingProject = await prisma.project.findFirst({
       where: {
-        name: projectName
+        name: {
+          contains: projectName, // Case-insensitive search
+          mode: 'insensitive' // Ensure case-insensitive matching
+        },
+        userId: userId // Ensure the project belongs to the user
       }
     });
-    
+
     // Check if project exists and belongs to user
     if (!existingProject) {
       return res.status(404).json({
@@ -330,22 +329,22 @@ const getProjectLogs = async (req, res, next) => {
         message: 'Project not found'
       });
     }
-    
+
     if (existingProject.userId !== userId) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to view logs for this project'
       });
     }
-    
+
     // Get logs with pagination
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
+
     const logs = await prisma.log.findMany({
       where: {
-        projectName
+        projectName: existingProject.name // Use the project name to fetch logs
       },
       orderBy: {
         timestamp: 'desc'
@@ -353,13 +352,13 @@ const getProjectLogs = async (req, res, next) => {
       skip,
       take: limit
     });
-    
+
     const totalLogs = await prisma.log.count({
       where: {
-        projectName
+        projectName: existingProject.name // Use the project name to count logs
       }
     });
-    
+
     res.status(200).json({
       success: true,
       data: {
