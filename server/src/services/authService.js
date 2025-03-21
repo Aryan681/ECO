@@ -170,5 +170,6 @@ module.exports = {
   verifyPassword,
   generateAuthTokens,
   refreshAuthTokens,
-  invalidateRefreshToken
+  invalidateRefreshToken,
+  hashPassword
 };

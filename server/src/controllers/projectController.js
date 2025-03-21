@@ -314,12 +314,12 @@ const addProjectLog = async (req, res, next) => {
 const getProjectLogs = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const projectId = req.params.id;
+    const projectName = req.params.name;
     
     // Find the project first
     const existingProject = await prisma.project.findUnique({
       where: {
-        id: projectId
+        name: projectName
       }
     });
     
@@ -345,7 +345,7 @@ const getProjectLogs = async (req, res, next) => {
     
     const logs = await prisma.log.findMany({
       where: {
-        projectId
+        projectName
       },
       orderBy: {
         timestamp: 'desc'
@@ -356,7 +356,7 @@ const getProjectLogs = async (req, res, next) => {
     
     const totalLogs = await prisma.log.count({
       where: {
-        projectId
+        projectName
       }
     });
     

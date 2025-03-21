@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 const register = async (req, res, next) => {
   try {
     // Validate request data
-    const validationResult = validateRegisterData(req.body);
+    const validationResult = validateRegisterData(req.body); 
     if (!validationResult.success) {
       return res.status(400).json({ 
         success: false,

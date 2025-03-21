@@ -13,6 +13,7 @@ const projectRoutes = require('./src/routes/projectRoutes');
 const rateLimiter = require('./src/middlewares/rateLimiter');
 const { setupSocketIO } = require('./src/utils/socketio');
 const userRoutes = require('./src/routes/userRoute');
+const redisClient = require('./src/utils/redisClient');
 
 // Initialize Express app
 const app = express();
@@ -51,6 +52,10 @@ async function startServer() {
       logger.info(`Server running on port ${PORT}`);
     });
     
+     // Test Redis connection
+     await redisClient.ping();
+     logger.info('Connected to Redis');
+
     // Initialize Socket.IO
     setupSocketIO(server);
     

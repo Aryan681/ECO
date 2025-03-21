@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const redis = require('redis');
 const logger = require('../utils/logger');
-
+const { hashPassword } = require('../services/authService'); 
 // Initialize Redis client
 const redisClient = redis.createClient({ url: process.env.REDIS_URL });
 redisClient.connect().catch(console.error);
@@ -42,15 +42,22 @@ const getUser = async (req, res, next) => {
   }
 };
 
-// Update user by ID
 const updateUser = async (req, res, next) => {
   const { id } = req.params;
   const { email, password } = req.body;
 
   try {
+    let updateData = { email };
+
+    // Hash the password if it's provided in the request
+    if (password) {
+      const hashedPassword = await hashPassword(password);
+      updateData.password = hashedPassword;
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { email, password },
+      data: updateData,
     });
 
     // Invalidate Redis cache
@@ -63,7 +70,6 @@ const updateUser = async (req, res, next) => {
     next(error);
   }
 };
-
 // Delete user by ID
 const deleteUser = async (req, res, next) => {
   const { id } = req.params;
