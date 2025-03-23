@@ -9,6 +9,7 @@ const logger = require('./src/utils/logger');
 const { connectDB } = require('./src/utils/database');
 const { errorHandler } = require('./src/middlewares/error');
 const authRoutes = require('./src/routes/authRoutes');
+const codeRoutes = require('./src/routes/codeRoutes');
 const projectRoutes = require('./src/routes/projectRoutes');
 const rateLimiter = require('./src/middlewares/rateLimiter');
 const { setupSocketIO } = require('./src/utils/socketio');
@@ -16,6 +17,9 @@ const userRoutes = require('./src/routes/userRoute');
 const redisClient = require('./src/utils/redisClient');
 const profileRoutes = require('./src/routes/profileRoutes'); 
 const path = require('path');
+const connectMDB = require('./src/config/db');
+
+
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/users', userRoutes);
 app.use('/api/profile', profileRoutes);
+app.use("/api/execute", codeRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -49,6 +54,7 @@ async function startServer() {
   try {
     // Connect to PostgreSQL via Prisma
     await connectDB();
+    await connectMDB();
     
     // Start HTTP server
     const server = app.listen(PORT, () => {

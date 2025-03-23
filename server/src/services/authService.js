@@ -1,7 +1,7 @@
 // services/authService.js
 const argon2 = require('argon2');
 const { createSecretKey } = require('crypto');
-const { SignJWT, jwtVerify } = require('jose');
+const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { PrismaClient } = require('@prisma/client');
 const Redis = require('ioredis');
@@ -92,11 +92,12 @@ const createUser = async ({ email, password, name }) => {
 // Generate JWT tokens
 const generateAuthTokens = async (user) => {
   // Generate access token
-  const accessToken = await new SignJWT({ userId: user.id })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(accessTokenExpiration)
-    .sign(accessTokenSecret);
+  const accessToken = jwt.sign(
+    { userId: user.id },
+    process.env.JWT_ACCESS_SECRET || 'default_access_secret',
+    { expiresIn: accessTokenExpiration }
+  );
+  
   
   // Generate refresh token with a unique identifier
   const jti = uuidv4();
@@ -117,7 +118,8 @@ const generateAuthTokens = async (user) => {
 const refreshAuthTokens = async (refreshToken) => {
   try {
     // Verify refresh token
-    const { payload } = await jwtVerify(refreshToken, refreshTokenSecret);
+    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'default_refresh_secret');
+
     const { userId, jti } = payload;
     
     // Check if token is in Redis (not revoked)

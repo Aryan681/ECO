@@ -12,7 +12,7 @@ const connectDB = async () => {
     logger.info('Connected to PostgreSQL database via Prisma');
     
     return true;
-  } catch (error) {
+  } catch (error) { 
     logger.error('Database connection error:', error);
     process.exit(1);
   }
