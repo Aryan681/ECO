@@ -45,7 +45,7 @@ const validateRegisterData = (data) => {
 // Validate login data
 const validateLoginData = (data) => {
   try {
-    const result = loginSchema.safeParse(data);
+      const result = loginSchema.safeParse(data);
     return result;
   } catch (error) {
     return { success: false, error };

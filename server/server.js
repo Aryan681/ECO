@@ -17,7 +17,7 @@ const userRoutes = require('./src/routes/userRoute');
 const redisClient = require('./src/utils/redisClient');
 const profileRoutes = require('./src/routes/profileRoutes'); 
 const path = require('path');
-const connectMDB = require('./src/config/db');
+// const connectMDB = require('./src/config/db');
 
 
 // Initialize Express app
@@ -52,38 +52,35 @@ app.use(errorHandler);
 // Start server
 async function startServer() {
   try {
-    // Connect to PostgreSQL via Prisma
-    await connectDB();
-    await connectMDB();
+    // Add more detailed logging
+    logger.info('Starting server initialization...');
     
-    // Start HTTP server
+    await connectDB();
+    logger.info('Database connected successfully');
+    
+    // Test Redis connection earlier
+    try {
+      await redisClient.ping();
+      logger.info('Connected to Redis successfully');
+    } catch (redisError) {
+      logger.error('Redis connection failed:', redisError);
+      throw redisError;
+    }
+
     const server = app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
     });
     
-     // Test Redis connection
-     await redisClient.ping();
-     logger.info('Connected to Redis');
-
-    // Initialize Socket.IO
     setupSocketIO(server);
-    
-    // Handle graceful shutdown
-    process.on('SIGTERM', async () => {
-      logger.info('SIGTERM signal received: closing HTTP server');
-      server.close(async () => {
-        await disconnectDB();
-        logger.info('HTTP server closed');
-        process.exit(0);
-      });
-    });
     
   } catch (error) {
     logger.error('Failed to start server:', error);
+    // Add more detailed error logging
+    if (error.code) logger.error(`Error code: ${error.code}`);
+    if (error.stack) logger.error(`Stack trace: ${error.stack}`);
     process.exit(1);
   }
 }
-
 startServer();
 
 module.exports = app;

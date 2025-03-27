@@ -1,24 +1,26 @@
-const Redis = require('ioredis');
+const redis = require('redis');
+const logger = require('./logger'); // Ensure you have a logger
 
-// Create a Redis client
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST || 'localhost', // Redis server host
-  port: process.env.REDIS_PORT || 6379, // Redis server port
-  password: process.env.REDIS_PASSWORD || '', // Redis password (if any)
+const redisClient = redis.createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
 });
 
-// Handle Redis connection errors
+redisClient.on('connect', () => {
+  logger.info('Redis client connected');
+});
+
 redisClient.on('error', (err) => {
-  console.error('Redis error:', err);
+  logger.error('Redis connection error:', err);
 });
 
-// Test the Redis connection
-redisClient.ping((err, result) => {
-  if (err) {
-    console.error('Failed to connect to Redis:', err);
-  } else {
-    console.log('Connected to Redis:', result);
+// Ensure the client connects before exporting
+(async () => {
+  try {
+    await redisClient.connect();
+    logger.info('Redis connection established');
+  } catch (err) {
+    logger.error('Failed to connect to Redis:', err);
   }
-});
+})();
 
 module.exports = redisClient;
