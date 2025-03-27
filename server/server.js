@@ -17,8 +17,12 @@ const userRoutes = require('./src/routes/userRoute');
 const redisClient = require('./src/utils/redisClient');
 const profileRoutes = require('./src/routes/profileRoutes'); 
 const path = require('path');
-// const connectMDB = require('./src/config/db');
+const githubAuthRoutes = require('./src/routes/githubAuthRoutes'); 
+const passport = require('./src/config/passport1');
+const session = require('express-session');
 
+// const connectMDB = require('./src/config/db');
+  
 
 // Initialize Express app
 const app = express();
@@ -34,7 +38,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Session middleware (for GitHub OAuth)
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Routes
+app.use('/api/github', githubAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/users', userRoutes);

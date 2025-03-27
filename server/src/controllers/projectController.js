@@ -2,7 +2,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { validateProject } = require('../utils/datavalidator');
 const logger = require('../utils/logger');
-
+const axios = require('axios');
 const prisma = new PrismaClient();
 
 // Get all projects for the authenticated user
