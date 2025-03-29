@@ -42,77 +42,64 @@ const verifyPassword = async (plainPassword, hashedPassword) => {
 const findUserByEmail = async (email) => {
   return prisma.user.findUnique({
     where: { email },
-    include: {
-      profile: true
-    }
+    include: { profile: true }
   });
 };
 
 // Create new user
-const createUser = async ({ email, password, name }) => {
-  const hashedPassword = await hashPassword(password);
-  
-  // Use a transaction to create both user and profile
+// services/authService.js
+const createUser = async ({ email, password, name, isGitHubLogin = false }) => {
+  const hashedPassword = isGitHubLogin 
+    ? require('crypto').randomBytes(32).toString('hex') // Unused but valid
+    : await hashPassword(password);
+
   return prisma.$transaction(async (tx) => {
-    // Create the user first
     const user = await tx.user.create({
       data: {
         email,
         password: hashedPassword,
+        authProvider: isGitHubLogin ? 'github' : 'local'
       }
     });
-    
-    // Create a related profile if name is provided
+
     if (name) {
-      // Split name into first and last name if possible
-      const nameParts = name.split(' ');
-      const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
-      
+      const [firstName, ...lastNameParts] = name.split(' ');
       await tx.profile.create({
         data: {
           firstName,
-          lastName,
+          lastName: lastNameParts.join(' ') || null,
           userId: user.id
         }
       });
     }
-    
-    // Return user with profile
+
     return tx.user.findUnique({
       where: { id: user.id },
       include: { profile: true }
     });
   });
 };
-
 // Generate JWT tokens
+// Make sure this is async
 const generateAuthTokens = async (user) => {
-  // Generate access token
   const accessToken = jwt.sign(
-    { userId: user.id },
-    process.env.JWT_ACCESS_SECRET || 'default_access_secret',
-    { expiresIn: accessTokenExpiration }
+    { userId: user.id, email: user.email },
+    process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'default_access_secret',
+    { expiresIn: '15m' }
   );
   
-  // Generate refresh token with a unique identifier (using jsonwebtoken)
-  const jti = uuidv4();
   const refreshToken = jwt.sign(
-    { 
-      userId: user.id, 
-      jti 
-    },
+    { userId: user.id },
     process.env.JWT_REFRESH_SECRET || 'default_refresh_secret',
-    { expiresIn: refreshTokenExpiration }
+    { expiresIn: '7d' }
   );
   
-  // Store refresh token in Redis with expiration time
-  const refreshExpSeconds = Math.floor(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).getTime() / 1000);
-  await redis.set(`refresh_token:${jti}`, user.id, 'EX', refreshExpSeconds);
+  // If you need to use Redis, make sure redis is properly imported
+  const jti = uuidv4(); // Make sure uuidv4 is imported
+  await redis.set(`refresh_token:${jti}`, user.id, 'EX', 7 * 24 * 60 * 60); // 7 days
   
   return { accessToken, refreshToken };
 };
-
 // Refresh authentication tokens
 const refreshAuthTokens = async (refreshToken) => {
   try {

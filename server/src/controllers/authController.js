@@ -79,7 +79,7 @@ const login = async (req, res, next) => {
     
     const { email, password } = validationResult.data;
     
-    // Authenticate user
+    // Find user by email
     const user = await authService.findUserByEmail(email);
     if (!user) {
       return res.status(401).json({
@@ -88,7 +88,23 @@ const login = async (req, res, next) => {
       });
     }
     
-    // Verify password
+    // Handle GitHub-authenticated users
+    if (user.authProvider === 'github') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account uses GitHub login. Please sign in with GitHub.',
+        authMethods: ['github'] // Frontend can use this to show GitHub button
+      });
+    }
+    
+    // Verify password for local users
+    if (!user.password) {
+      return res.status(403).json({
+        success: false,
+        message: 'Password login not available for this account'
+      });
+    }
+    
     const isPasswordValid = await authService.verifyPassword(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -104,12 +120,14 @@ const login = async (req, res, next) => {
     const userData = {
       id: user.id,
       email: user.email,
+      authProvider: user.authProvider, // Include auth method in response
       createdAt: user.createdAt,
       profile: user.profile ? {
         id: user.profile.id,
         firstName: user.profile.firstName,
         lastName: user.profile.lastName,
-        bio: user.profile.bio
+        bio: user.profile.bio,
+        avatarUrl: user.profile.avatarUrl
       } : null
     };
     

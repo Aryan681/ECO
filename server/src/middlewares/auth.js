@@ -19,7 +19,10 @@ const authenticateJWT = async (req, res, next) => {
   
   try {
     const { payload } = await jwtVerify(token, accessTokenSecret);
-    req.user = { id: payload.userId };
+    req.user = { 
+      id: payload.userId,
+      authMethod: payload.authMethod // Add auth method to payload
+    };
     next();
   } catch (error) {
     logger.error('JWT verification error:', error);
@@ -30,6 +33,35 @@ const authenticateJWT = async (req, res, next) => {
   }
 };
 
+// middleware/auth.js
+const checkAuthMethod = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
+
+    // Block password login for GitHub-authenticated users
+    if (user.authMethod === 'github') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account uses GitHub login',
+        authMethod: 'github'
+      });
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+
+};
 module.exports = {
-  authenticateJWT
+  authenticateJWT,
+  checkAuthMethod
 };
