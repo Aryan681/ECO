@@ -3,7 +3,7 @@ const passport = require('../config/passport1');
 const { generateAuthTokens } = require('../services/authService');
 
 const githubAuth = passport.authenticate('github', { 
-  scope: ['user:email', 'repo'] 
+  scope: ['user:email', 'repo' ,'delete_repo'] 
 });
 
 const githubCallback = (req, res, next) => {

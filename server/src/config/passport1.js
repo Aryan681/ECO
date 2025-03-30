@@ -11,10 +11,10 @@ passport.use(
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:3000/api/github/callback",
-      scope: ["user:email", "repo"],
+      scope: ["user:email", "repo",'delete_repo'],
     },
     async (accessToken, refreshToken, profile, done) => {
-      try {
+      try {     
         console.log("✅ GitHub OAuth Success - Profile Data:", profile);
 
         const email = profile.emails?.[0]?.value || null;

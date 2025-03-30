@@ -82,39 +82,60 @@ const createUser = async ({ email, password, name, isGitHubLogin = false }) => {
 // Generate JWT tokens
 // Make sure this is async
 const generateAuthTokens = async (user) => {
+  const jti = uuidv4(); // Generate unique token identifier
+
   const accessToken = jwt.sign(
     { userId: user.id, email: user.email },
-    process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'default_access_secret',
+    process.env.JWT_ACCESS_SECRET || 'default_access_secret',
     { expiresIn: '15m' }
   );
-  
+
   const refreshToken = jwt.sign(
-    { userId: user.id },
+    { userId: user.id, jti }, // Include jti
     process.env.JWT_REFRESH_SECRET || 'default_refresh_secret',
     { expiresIn: '7d' }
   );
-  
-  // If you need to use Redis, make sure redis is properly imported
-  const jti = uuidv4(); // Make sure uuidv4 is imported
+
+  // Store refresh token in Redis (linked to jti)
   await redis.set(`refresh_token:${jti}`, user.id, 'EX', 7 * 24 * 60 * 60); // 7 days
-  
+
   return { accessToken, refreshToken };
 };
 // Refresh authentication tokens
 const refreshAuthTokens = async (refreshToken) => {
   try {
-    // Verify refresh token using jwt.verify()
+    // Verify refresh token
     const payload = jwt.verify(
-      refreshToken, 
+      refreshToken,
       process.env.JWT_REFRESH_SECRET || 'default_refresh_secret'
     );
 
     const { userId, jti } = payload;
-    
-    // Rest of the function remains the same...
+
+    // Check if the refresh token exists in Redis (ensure token is still valid)
+    const storedUserId = await redis.get(`refresh_token:${jti}`);
+    if (!storedUserId || storedUserId !== userId) {
+      logger.error('Refresh token is invalid or expired');
+      return { error: 'Invalid or expired refresh token' };
+    }
+
+    // Fetch user from DB
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      logger.error('User not found while refreshing token');
+      return { error: 'User not found' };
+    }
+
+    // Generate new tokens
+    const newTokens = await generateAuthTokens(user);
+
+    // Remove old refresh token from Redis
+    await redis.del(`refresh_token:${jti}`);
+
+    return newTokens;
   } catch (error) {
     logger.error('Refresh token verification error:', error);
-    return null;
+    return { error: 'Invalid or expired refresh token' };
   }
 };
 
