@@ -1,18 +1,17 @@
-// controllers/githubAuthController.js
 const passport = require('../config/passport1');
 const { generateAuthTokens } = require('../services/authService');
 
 const githubAuth = passport.authenticate('github', { 
-  scope: ['user:email', 'repo' ,'delete_repo'] 
+  scope: ['user:email', 'repo', 'delete_repo'],
+  passReqToCallback: true
 });
 
 const githubCallback = (req, res, next) => {
   passport.authenticate('github', { 
     session: false,
-    failureRedirect: false // Essential for JSON response
-  }, async (err, user, info) => {
+    failureRedirect: false
+  }, async (err, data, info) => {
     try {
-      // Error handling
       if (err) {
         console.error('GitHub Auth Process Error:', err);
         return res.status(500).json({
@@ -22,7 +21,7 @@ const githubCallback = (req, res, next) => {
         });
       }
 
-      if (!user) {
+      if (!data || !data.user) {
         console.error('GitHub Auth Failed - No User:', info);
         return res.status(401).json({
           success: false,
@@ -31,7 +30,9 @@ const githubCallback = (req, res, next) => {
         });
       }
 
-      // Token generation
+      const { user, token, githubAccessToken } = data;
+
+      // Generate auth tokens
       const { accessToken, refreshToken } = await generateAuthTokens(user);
 
       // Successful response
@@ -40,14 +41,15 @@ const githubCallback = (req, res, next) => {
         user: {
           id: user.id,
           email: user.email,
-          name: user.profile?.firstName,
-          avatar: user.profile?.avatarUrl,
+          name: user.profile?.firstName || user.profile?.username,
+          avatar: user.profile?.profileImage,
           authMethod: 'github'
         },
         tokens: {
           accessToken,
           refreshToken
-        }
+        },
+        githubAccessToken: githubAccessToken // Include the fresh token
       });
     } catch (error) {
       console.error('Callback Processing Error:', error);

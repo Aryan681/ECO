@@ -2,10 +2,15 @@
 const { jwtVerify } = require('jose');
 const { createSecretKey } = require('crypto');
 const logger = require('../utils/logger');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const accessTokenSecret = createSecretKey(Buffer.from(process.env.JWT_ACCESS_SECRET || 'default_access_secret', 'utf-8'));
 
-const authenticateJWT = async (req, res, next) => {
+/**
+ * Main authentication middleware that handles both JWT and GitHub tokens
+ */
+const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,14 +23,15 @@ const authenticateJWT = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const { payload } = await jwtVerify(token, accessTokenSecret);
-    req.user = { 
-      id: payload.userId,
-      authMethod: payload.authMethod // Add auth method to payload
-    };
-    next();
+    // Check if it's a GitHub token (starts with gho_)
+    if (token.startsWith('gho_')) {
+      return await authenticateGitHubToken(token, req, res, next);
+    }
+    
+    // Otherwise treat as JWT
+    return await authenticateJWT(token, req, res, next);
   } catch (error) {
-    logger.error('JWT verification error:', error);
+    logger.error('Authentication error:', error);
     return res.status(401).json({
       success: false,
       message: 'Invalid or expired token'
@@ -33,7 +39,47 @@ const authenticateJWT = async (req, res, next) => {
   }
 };
 
-// middleware/auth.js
+/**
+ * Handles JWT token authentication
+ */
+const authenticateJWT = async (token, req, res, next) => {
+  const { payload } = await jwtVerify(token, accessTokenSecret);
+  req.user = { 
+    id: payload.userId,
+    authMethod: payload.authMethod
+  };
+  next();
+};
+
+/**
+ * Handles GitHub token authentication
+ */
+const authenticateGitHubToken = async (token, req, res, next) => {
+  // Verify the token exists in our system and is valid
+  const user = await prisma.user.findFirst({
+    where: {
+      githubAccessToken: token
+    },
+    select: {
+      id: true,
+      authProvider: true
+    }
+  });
+
+  if (!user) {
+    throw new Error('Invalid GitHub access token');
+  }
+
+  req.user = {
+    id: user.id,
+    authMethod: user.authProvider
+  };
+  next();
+};
+
+/**
+ * Checks authentication method for login attempts
+ */
 const checkAuthMethod = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -59,9 +105,10 @@ const checkAuthMethod = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-
 };
+
 module.exports = {
-  authenticateJWT,
+  authenticate, // Main authentication middleware
+  authenticateJWT, // For specific JWT cases
   checkAuthMethod
 };
