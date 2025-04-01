@@ -6,43 +6,35 @@ const { createClient } = require("redis");
 
 const prisma = new PrismaClient();
 
-// Redis client setup with async/await
-let redisClient;
-
-async function initializeRedis() {
-  redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
-  });
-
-  redisClient.on('error', (err) => console.error('Redis Client Error:', err));
-  
-  await redisClient.connect();
-  console.log('Redis client connected and ready');
-}
-
-// Initialize Redis immediately
-initializeRedis().catch(err => {
-  console.error('Failed to connect to Redis:', err);
-  process.exit(1);
+// Redis client setup
+const redisClient = createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
-// Function to update token in both DB and Redis
-async function updateGitHubToken(userId, email, accessToken) {
+redisClient.on('error', (err) => console.error('Redis Client Error:', err));
+(async () => {
+  await redisClient.connect();
+  console.log('Redis client connected');
+})();
+
+// Function to update GitHub token in both DB and Redis
+async function updateGitHubToken(userId, accessToken) {
   try {
     // Update in PostgreSQL
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { githubAccessToken: accessToken }
+      data: { 
+        githubAccessToken: accessToken,
+        updatedAt: new Date()
+      }
     });
 
     // Store in Redis with 1-hour expiration
-    if (redisClient.isOpen) {
-      await redisClient.set(`github:token:${userId}`, accessToken, {
-        EX: 3600
-      });
-    } else {
-      console.warn('Redis client not open, skipping cache update');
-    }
+    await redisClient.set(`github:token:${userId}`, accessToken, {
+      EX: 3600 // 1 hour expiration
+    });
+
+    return updatedUser;
   } catch (error) {
     console.error('Error updating GitHub token:', error);
     throw error;
@@ -54,70 +46,122 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:3000/api/github/callback",
-      scope: ["user:email", "repo", 'delete_repo'],
+      callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:3000/api/auth/github/callback",
+      scope: ["user:email", "repo", "delete_repo"],
       passReqToCallback: true
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
-        console.log("✅ GitHub OAuth Success - Profile Data:", profile);
+        console.log("GitHub profile received:", profile);
 
-        const email = profile.emails?.[0]?.value;
+        // Extract email - GitHub sometimes returns email in different places
+        const email = profile.emails?.[0]?.value || 
+                     profile._json?.email || 
+                     `${profile.username}@users.noreply.github.com`;
+
         if (!email) {
-          console.error("❌ No email found in GitHub profile!");
-          return done(null, false, { message: "No email associated with GitHub account" });
+          return done(new Error("No email found in GitHub profile"));
         }
 
-        let user = await prisma.user.findUnique({ 
-          where: { email },
+        // Check for existing user by email or GitHub ID
+        let user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email },
+              { githubId: profile.id }
+            ]
+          },
           include: { profile: true }
         });
 
+        // User creation/update data
+        const userData = {
+          authMethod: "github",
+          githubId: profile.id,
+          githubAccessToken: accessToken,
+          githubUsername: profile.username,
+          avatarUrl: profile.photos?.[0]?.value || profile._json?.avatar_url,
+          updatedAt: new Date()
+        };
+
         if (!user) {
+          // Create new user
           user = await prisma.user.create({
             data: {
-              authProvider: "github",
+              ...userData,
               email,
-              githubId: profile.id,
-              githubAccessToken: accessToken,
               profile: {
                 create: {
-                  firstName: profile.displayName || profile.username || "",
-                  profileImage: profile.photos?.[0]?.value || "",
-                },
-              },
+                  firstName: profile.displayName || profile.username,
+                  lastName: "",
+                }
+              }
             },
-            include: { profile: true },
+            include: { profile: true }
           });
-          console.log("✅ New GitHub User Created:", user);
+          console.log("New GitHub user created:", user.id);
+        } else {
+          // Update existing user
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: userData,
+            include: { profile: true }
+          });
+          console.log("Existing user updated:", user.id);
         }
 
-        // Always update the token (for both new and existing users)
-        await updateGitHubToken(user.id, email, accessToken);
-        console.log("✅ GitHub token updated in DB and Redis");
+        // Update token in Redis
+        await updateGitHubToken(user.id, accessToken);
 
         // Generate JWT token
         const token = jwt.sign(
-          { userId: user.id, authMethod: "github" },
-          process.env.JWT_ACCESS_SECRET || "default_access_secret",
-          { expiresIn: "15m" }
+          { 
+            userId: user.id,
+            authMethod: "github",
+            email: user.email
+          },
+          process.env.JWT_SECRET || "your_jwt_secret_here",
+          { expiresIn: "1h" }
         );
 
-        return done(null, { user, token, githubAccessToken: accessToken });
+        return done(null, { 
+          user: {
+            id: user.id,
+            email: user.email,
+            authMethod: user.authMethod,
+            profile: user.profile
+          },
+          token,
+          githubAccessToken: accessToken
+        });
       } catch (error) {
-        console.error("❌ GitHub Auth Error:", error);
-        return done(error, null);
+        console.error("GitHub authentication error:", error);
+        return done(error);
       }
     }
   )
 );
 
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((user, done) => done(null, user));
+// Passport serialization
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { profile: true }
+    });
+    done(null, user);
+  } catch (error) {
+    done(error);
+  }
+});
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  if (redisClient) await redisClient.quit();
+  await redisClient.quit();
   process.exit();
 });
 

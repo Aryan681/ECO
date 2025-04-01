@@ -1,23 +1,28 @@
-    // routes/projectRoutes.js
-    const express = require('express');
-    const router = express.Router();
-    const { getGitHubRepos ,createRepository , deleteRepository } = require('../controllers/projectController');
-    const { authenticate } = require('../middlewares/auth');
+const express = require("express");
+const router = express.Router();
+const {
+  getGitHubRepos,
+  createRepository,
+  deleteRepository,
+  updateRepository,
+  searchRepositories
 
-    // All project routes require authentication
-    router.use(authenticate);
+} = require("../controllers/projectController");
+const { authenticate } = require("../middlewares/auth"); // Use the new authenticate middleware
 
-    // Project routes
-    router.get('/repos', getGitHubRepos);
-    router.post('/repos', createRepository);
-    router.delete('/repos/:owner/:repo', deleteRepository);
-    // router.post('/', projectController.createProject);
-    // router.get('/:name', projectController.getProjectByName)
-    // router.put('/:id', projectController.updateProject);
-    // router.delete('/:id', projectController.deleteProject);
+// All project routes require authentication (works with both JWT and GitHub tokens)
+router.use(authenticate); // Changed from authenticateJWT
 
-    // // Project logs routes
-    // router.get('/:id/logs', projectController.getProjectLogs);
-    // router.post('/:id/logs', projectController.addProjectLog);
+// Project routes
+router.get("/repos", getGitHubRepos);
 
-    module.exports = router;
+router.post("/repos", createRepository);
+router.delete('/repos/:owner/:repo', deleteRepository);
+router.patch('/repos/:owner/:repo', updateRepository);
+router.get('/repos/search', searchRepositories);
+
+// // Project logs routes
+// router.get('/:id/logs', projectController.getProjectLogs);
+// router.post('/:id/logs', projectController.addProjectLog);
+
+module.exports = router;

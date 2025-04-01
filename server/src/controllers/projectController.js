@@ -1,4 +1,4 @@
-const { fetchGitHubRepos ,createGitHubRepo } = require('../services/projectService');
+const { fetchGitHubRepos, createGitHubRepo ,deleteGitHubRepo,updateGitHubRepo ,searchGitHubRepos} = require('../services/projectService');
 
 const getGitHubRepos = async (req, res) => {
   try {
@@ -25,7 +25,7 @@ const getGitHubRepos = async (req, res) => {
     const statusCode = error.statusCode || 
                       (error.message.includes('not found') ? 404 : 
                       (error.message.includes('expired') || error.message.includes('authentication')) ? 401 : 
-                      (error.message.includes('rate limit')) ? 429 : 500 );
+                      (error.message.includes('rate limit')) ? 429 : 500);
     
     res.status(statusCode).json({
       success: false,
@@ -79,31 +79,83 @@ const createRepository = async (req, res) => {
   }
 };
 
+// Add this new controller method
 const deleteRepository = async (req, res) => {
   try {
     const userId = req.user.id;
     const { owner, repo } = req.params;
 
-    // Validate parameters
     if (!owner || !repo) {
       return res.status(400).json({
         success: false,
-        message: 'Both owner and repository name are required'
+        message: 'Repository owner and name are required'
       });
     }
 
-    const success = await deleteGitHubRepo(userId, owner, repo);
+    const result = await deleteGitHubRepo(userId, owner, repo);
     
     res.status(200).json({
       success: true,
-      message: `Repository ${owner}/${repo} deleted successfully`
+      message: result.message,
+      data: {
+        repository: result.repo
+      }
     });
   } catch (error) {
     console.error('Error in deleteRepository:', error);
     
-    const statusCode = error.message.includes('authentication') ? 401 : 
-                      error.message.includes('Permission') ? 403 :
-                      error.message.includes('not found') ? 404 : 400;
+    const statusCode = error.message.includes('not found') ? 404 : 
+                      error.message.includes('authentication') ? 401 : 
+                      error.message.includes('Permission denied') ? 403 : 
+                      500;
+    
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+      action: statusCode === 401 ? 'Reauthenticate with GitHub' : null
+    });
+  }
+};
+
+// Add this new controller method
+const updateRepository = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { owner, repo } = req.params;
+    const updateData = req.body;
+
+    if (!owner || !repo) {
+      return res.status(400).json({
+        success: false,
+        message: 'Repository owner and name are required'
+      });
+    }
+
+    // Validate at least one field is being updated
+    const validFields = ['name', 'description', 'private', 'visibility'];
+    if (!Object.keys(updateData).some(field => validFields.includes(field))) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one valid field must be provided for update',
+        validFields
+      });
+    }
+
+    const updatedRepo = await updateGitHubRepo(userId, owner, repo, updateData);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Repository updated successfully',
+      data: updatedRepo
+    });
+  } catch (error) {
+    console.error('Error in updateRepository:', error);
+    
+    const statusCode = error.message.includes('not found') ? 404 : 
+                      error.message.includes('authentication') ? 401 : 
+                      error.message.includes('Permission denied') ? 403 : 
+                      error.message.includes('Invalid update data') ? 422 : 
+                      500;
     
     res.status(statusCode).json({
       success: false,
@@ -114,4 +166,48 @@ const deleteRepository = async (req, res) => {
 };
 
 
-module.exports = { getGitHubRepos , createRepository,deleteRepository };
+// Add this new controller method
+const searchRepositories = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { q } = req.query;
+
+    if (!q || typeof q !== 'string' || q.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query (q) is required and must be a non-empty string'
+      });
+    }
+
+    const repos = await searchGitHubRepos(userId, q.trim());
+    
+    res.status(200).json({
+      success: true,
+      count: repos.length,
+      data: repos
+    });
+  } catch (error) {
+    console.error('Error in searchRepositories:', error);
+    
+    const statusCode = error.message.includes('authentication') ? 401 : 
+                      error.message.includes('rate limit') ? 429 : 
+                      error.message.includes('Invalid search') ? 422 : 
+                      500;
+    
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+      action: statusCode === 401 ? 'Reauthenticate with GitHub' : 
+              statusCode === 429 ? 'Try again later' : null
+    });
+  }
+};
+
+// Update your exports
+module.exports = { 
+  getGitHubRepos,
+  createRepository,
+  deleteRepository,
+  updateRepository,
+  searchRepositories
+};

@@ -4,6 +4,7 @@ const { createSecretKey } = require('crypto');
 const logger = require('../utils/logger');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const axios = require("axios");
 
 const accessTokenSecret = createSecretKey(Buffer.from(process.env.JWT_ACCESS_SECRET || 'default_access_secret', 'utf-8'));
 
@@ -55,28 +56,55 @@ const authenticateJWT = async (token, req, res, next) => {
  * Handles GitHub token authentication
  */
 const authenticateGitHubToken = async (token, req, res, next) => {
-  // Verify the token exists in our system and is valid
-  const user = await prisma.user.findFirst({
-    where: {
-      githubAccessToken: token
-    },
-    select: {
-      id: true,
-      authProvider: true
+  try {
+    // 1. Verify token with GitHub API
+    const githubResponse = await axios.get('https://api.github.com/user', {
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: 'application/vnd.github.v3+json'
+      }
+    });
+
+    // 2. Find user in database using correct field names
+    const user = await prisma.user.findFirst({
+      where: {
+        githubAccessToken: token,
+        githubId: githubResponse.data.id.toString()
+      },
+      select: {
+        id: true,
+        authMethod: true, // Changed from authProvider to match schema
+        email: true
+      }
+    });
+
+    if (!user) {
+      return res.status(403).json({
+        success: false,
+        message: 'GitHub account not linked to any user',
+        action: 'Complete GitHub OAuth setup first'
+      });
     }
-  });
 
-  if (!user) {
-    throw new Error('Invalid GitHub access token');
+    req.user = {
+      id: user.id,
+      authMethod: user.authMethod // Updated field name
+    };
+    next();
+  } catch (error) {
+    console.error('GitHub token verification failed:', error);
+    
+    if (error.response?.status === 401) {
+      return res.status(401).json({
+        success: false,
+        message: 'GitHub token expired or revoked',
+        action: 'Reauthenticate with GitHub'
+      });
+    }
+    
+    next(error);
   }
-
-  req.user = {
-    id: user.id,
-    authMethod: user.authProvider
-  };
-  next();
 };
-
 /**
  * Checks authentication method for login attempts
  */

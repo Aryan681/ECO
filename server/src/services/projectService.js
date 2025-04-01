@@ -13,7 +13,11 @@ let redisClient;
   await redisClient.connect();
 })();
 
-
+/**
+ * Gets GitHub access token from Redis or database
+ * @param {string} userId 
+ * @returns {Promise<string>} GitHub access token
+ */
 async function getGitHubToken(userId) {
   try {
     // 1. Try Redis first
@@ -90,7 +94,11 @@ async function fetchReposWithToken(userId, accessToken) {
   }
 }
 
-
+/**
+ * Fetches GitHub repositories for a user
+ * @param {string} userId 
+ * @returns {Promise<Array>} 
+ */
 const fetchGitHubRepos = async (userId) => {
   try {
     // 1. Get access token (from Redis or DB)
@@ -164,26 +172,29 @@ const createGitHubRepo = async (userId, repoData) => {
   }
 };
 
-const deleteGitHubRepo = async (userId, owner, repo) => {
+const deleteGitHubRepo = async (userId, repoOwner, repoName) => {
   try {
     // Get user with GitHub access token
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { githubAccessToken: true, githubUsername: true }
+      select: { 
+        githubAccessToken: true,
+        githubUsername: true 
+      }
     });
 
     if (!user?.githubAccessToken) {
       throw new Error('GitHub access token not found for this user');
     }
 
-    // Verify the requesting user matches the repository owner
-    if (user.githubUsername && user.githubUsername.toLowerCase() !== owner.toLowerCase()) {
+    // Verify the requesting user owns the repo
+    if (repoOwner !== user.githubUsername) {
       throw new Error('You can only delete repositories you own');
     }
 
     // Delete repository via GitHub API
     const response = await axios.delete(
-      `https://api.github.com/repos/${owner}/${repo}`, 
+      `https://api.github.com/repos/${repoOwner}/${repoName}`,
       {
         headers: {
           Authorization: `Bearer ${user.githubAccessToken}`,
@@ -193,26 +204,174 @@ const deleteGitHubRepo = async (userId, owner, repo) => {
       }
     );
 
-    return response.status === 204;
+    // GitHub returns 204 on successful deletion
+    if (response.status === 204) {
+      return { 
+        success: true,
+        message: 'Repository deleted successfully',
+        repo: `${repoOwner}/${repoName}`
+      };
+    }
+
+    throw new Error('Unexpected response from GitHub API');
   } catch (error) {
     console.error('GitHub repo deletion failed:', error.response?.data || error.message);
     
+    // Handle specific GitHub API errors
     if (error.response) {
-      switch (error.response.status) {
-        case 401:
-          throw new Error('GitHub authentication failed - token may be invalid');
-        case 403:
-          throw new Error('Permission denied - you may not have admin access to this repository');
-        case 404:
-          throw new Error('Repository not found or already deleted');
-        default:
-          throw new Error(`GitHub API error: ${error.response.data.message || 'Unknown error'}`);
+      if (error.response.status === 401) {
+        throw new Error('GitHub authentication failed - token may be invalid');
+      }
+      if (error.response.status === 403) {
+        throw new Error('Permission denied - check your token permissions');
+      }
+      if (error.response.status === 404) {
+        throw new Error('Repository not found or already deleted');
       }
     }
     
-    throw error;
+    throw new Error('Failed to delete repository: ' + error.message);
+  }
+};
+// Add this new function to your existing projectService.js
+const updateGitHubRepo = async (userId, repoOwner, repoName, updateData) => {
+  try {
+    // Get user with GitHub access token
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        githubAccessToken: true,
+        githubUsername: true 
+      }
+    });
+
+    if (!user?.githubAccessToken) {
+      throw new Error('GitHub access token not found for this user');
+    }
+
+    // Verify the requesting user owns the repo
+    if (repoOwner !== user.githubUsername) {
+      throw new Error('You can only update repositories you own');
+    }
+
+    // Update repository via GitHub API
+    const response = await axios.patch(
+      `https://api.github.com/repos/${repoOwner}/${repoName}`,
+      updateData,
+      {
+        headers: {
+          Authorization: `Bearer ${user.githubAccessToken}`,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      }
+    );
+
+    // Format the response
+    return {
+      id: response.data.id,
+      name: response.data.name,
+      fullName: response.data.full_name,
+      htmlUrl: response.data.html_url,
+      private: response.data.private,
+      description: response.data.description,
+      visibility: response.data.visibility,
+      updatedAt: response.data.updated_at
+    };
+  } catch (error) {
+    console.error('GitHub repo update failed:', error.response?.data || error.message);
+    
+    // Handle specific GitHub API errors
+    if (error.response) {
+      if (error.response.status === 401) {
+        throw new Error('GitHub authentication failed - token may be invalid');
+      }
+      if (error.response.status === 403) {
+        throw new Error('Permission denied - check your token permissions');
+      }
+      if (error.response.status === 404) {
+        throw new Error('Repository not found');
+      }
+      if (error.response.status === 422) {
+        throw new Error('Invalid update data: ' + 
+          (error.response.data.message || 'Validation failed'));
+      }
+    }
+    
+    throw new Error('Failed to update repository: ' + error.message);
   }
 };
 
+// Add this new function to your existing projectService.js
+const searchGitHubRepos = async (userId, searchQuery) => {
+  try {
+    // Get user with GitHub access token and username
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        githubAccessToken: true,
+        githubUsername: true 
+      }
+    });
 
-module.exports = { fetchGitHubRepos , createGitHubRepo ,deleteGitHubRepo};
+    if (!user?.githubAccessToken || !user?.githubUsername) {
+      throw new Error('GitHub credentials not found for this user');
+    }
+
+    // Search repositories via GitHub API
+    const response = await axios.get(
+      `https://api.github.com/search/repositories?q=${encodeURIComponent(searchQuery)}+user:${user.githubUsername}`,
+      {
+        headers: {
+          Authorization: `Bearer ${user.githubAccessToken}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      }
+    );
+
+    // Format the response
+    return response.data.items.map(repo => ({
+      id: repo.id,
+      name: repo.name,
+      fullName: repo.full_name,
+      private: repo.private,
+      htmlUrl: repo.html_url,
+      description: repo.description,
+      createdAt: repo.created_at,
+      updatedAt: repo.updated_at,
+      stars: repo.stargazers_count,
+      forks: repo.forks_count,
+      language: repo.language,
+      owner: repo.owner.login
+    }));
+  } catch (error) {
+    console.error('GitHub repo search failed:', error.response?.data || error.message);
+    
+    // Handle specific GitHub API errors
+    if (error.response) {
+      if (error.response.status === 401) {
+        throw new Error('GitHub authentication failed - token may be invalid');
+      }
+      if (error.response.status === 403) {
+        throw new Error('API rate limit exceeded - try again later');
+      }
+      if (error.response.status === 422) {
+        throw new Error('Invalid search query');
+      }
+    }
+    
+    throw new Error('Failed to search repositories: ' + error.message);
+  }
+};
+
+// Add to your existing exports
+module.exports = { 
+  fetchGitHubRepos,
+  createGitHubRepo,
+  deleteGitHubRepo,
+  updateGitHubRepo,
+  searchGitHubRepos
+};
+
