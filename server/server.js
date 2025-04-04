@@ -20,7 +20,7 @@ const path = require('path');
 const githubAuthRoutes = require('./src/routes/githubAuthRoutes'); 
 const passport = require('./src/config/passport1');
 const session = require('express-session');
-
+const spotifyRoutes = require('./src/routes/spotifyRoutes');
 // const connectMDB = require('./src/config/db');
   
 
@@ -50,6 +50,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/users', userRoutes);
 app.use('/api/profile', profileRoutes);
 app.use("/api/execute", codeRoutes);
+app.use('/api/spotify', spotifyRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
