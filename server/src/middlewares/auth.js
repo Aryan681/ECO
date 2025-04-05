@@ -134,9 +134,36 @@ const checkAuthMethod = async (req, res, next) => {
     next(error);
   }
 };
+const requireSpotifyConnection = async (req, res, next) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'User not authenticated'
+    });
+  }
+
+  const spotifyAccount = await prisma.spotifyAccount.findUnique({
+    where: { userId }
+  });
+
+  if (!spotifyAccount) {
+    return res.status(403).json({
+      success: false,
+      message: 'Spotify account not connected'
+    });
+  }
+
+  // Attach Spotify account details if needed downstream
+  req.spotifyAccount = spotifyAccount;
+
+  next();
+};
 
 module.exports = {
   authenticate, // Main authentication middleware
   authenticateJWT, // For specific JWT cases
-  checkAuthMethod
+  checkAuthMethod,
+  requireSpotifyConnection
 };

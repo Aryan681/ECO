@@ -1,15 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const spotifyController = require('../controllers/spotifyController');
-const { authenticate } = require('../middlewares/auth');
+const { authenticate ,requireSpotifyConnection} = require('../middlewares/auth');
 
-// Start Spotify OAuth flow
 router.get('/login', authenticate, spotifyController.initiateSpotifyLogin);
+router.get('/callback', spotifyController.handleSpotifyCallback);
 
-// Callback from Spotify after auth
-router.get('/callback', authenticate, spotifyController.handleSpotifyCallback);
+router.get('/profile', authenticate, requireSpotifyConnection, spotifyController.getSpotifyProfile);
 
-// Get current user's Spotify profile
-router.get('/profile', authenticate, spotifyController.getSpotifyProfile);
+router.get('/playlists', authenticate, requireSpotifyConnection, spotifyController.getUserPlaylists);
+router.get('/liked', authenticate, requireSpotifyConnection, spotifyController.getLikedSongs);
+
+
+router.post('/play', authenticate, requireSpotifyConnection, spotifyController.playTrack);
+router.put('/pause', authenticate, requireSpotifyConnection, spotifyController.pauseTrack);
+router.put('/resume', authenticate, requireSpotifyConnection, spotifyController.resumeTrack);
+
+router.post('/track', authenticate, spotifyController.skipTrack);
+
+router.post('/like', authenticate, requireSpotifyConnection,spotifyController.likeTrack);
+router.post('/playlist/add', authenticate, requireSpotifyConnection,spotifyController.addTrackToPlaylist);
+
+router.post('/unlike', authenticate, requireSpotifyConnection,spotifyController.unlikeTrack);
+router.post('/playlist/remove', authenticate, requireSpotifyConnection,spotifyController.removeTrackFromPlaylist);
+
 
 module.exports = router;

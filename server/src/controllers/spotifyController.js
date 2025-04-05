@@ -14,14 +14,12 @@ exports.handleSpotifyCallback = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing code or user' });
     }
 
-    console.log('📥 Received code:', code);
-    console.log('👤 Received userId from state:', userId);
-
-    await spotifyService.exchangeTokenAndSaveUser(code, userId);
+    const spotifyId = await spotifyService.exchangeTokenAndSaveUser(code, userId);
     return res.status(200).json({
       success: true,
       message: 'Spotify account connected successfully',
-      userId
+      userId,
+      spotifyId
     });
   } catch (error) {
     console.error("❌ Spotify Callback Error:", error.response?.data || error.message || error);
@@ -36,5 +34,186 @@ exports.getSpotifyProfile = async (req, res) => {
   } catch (error) {
     console.error("❌ Get Spotify Profile Error:", error.response?.data || error.message || error);
     res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+  }
+};
+
+exports.playTrack = async (req, res) => {
+  try {
+    await spotifyService.playTrack(req.user.id, req.body.trackUri);
+    res.json({ success: true, message: 'Playback started' });
+  } catch (error) {
+    console.error("❌ Play Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to play track' });
+  }
+};
+
+exports.pauseTrack = async (req, res) => {
+  try {
+    await spotifyService.pauseTrack(req.user.id);
+    res.json({ success: true, message: 'Playback paused' });
+  } catch (error) {
+    console.error("❌ Pause Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to pause playback' });
+  }
+};
+
+exports.resumeTrack = async (req, res) => {
+  try {
+    await spotifyService.resumeTrack(req.user.id);
+    res.json({ success: true, message: 'Playback resumed' });
+  } catch (error) {
+    console.error("❌ Resume Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to resume playback' });
+  }
+};
+
+
+exports.getUserPlaylists = async (req, res) => {
+  try {
+    const raw = await spotifyService.fetchUserPlaylists(req.user.id);
+
+    const playlists = raw.items.map(p => ({
+      id: p.id,
+      name: p.name,
+      totalTracks: p.tracks.total,
+      coverImage: p.images?.[0]?.url || null,
+      owner: p.owner?.display_name || 'Unknown'
+    }));
+
+    res.status(200).json({ success: true, ...playlists });
+  } catch (error) {
+    console.error("❌ Get Playlists Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to fetch playlists' });
+  }
+};
+
+
+exports.getLikedSongs = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+
+    const data = await spotifyService.fetchLikedSongs(req.user.id, limit, offset);
+
+    const cleanedTracks = data.items.map(item => ({
+      id: item.track.id,
+      uri: item.track.uri,
+      name: item.track.name,
+      artists: item.track.artists.map(artist => artist.name),
+      album: {
+        name: item.track.album.name,
+        image: item.track.album.images?.[0]?.url || null
+      },
+      added_at: item.added_at
+    }));
+
+    res.status(200).json({ success: true, tracks: cleanedTracks });
+  } catch (error) {
+    console.error("❌ Liked Songs Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to fetch liked songs' });
+  }
+};
+
+
+exports.skipTrack = async (req, res) => {
+  const action = req.query.action;
+
+  try {
+    if (action === 'next') {
+      await spotifyService.nextTrack(req.user.id);
+      return res.json({ success: true, message: 'Skipped to next track' });
+    } else if (action === 'previous') {
+      await spotifyService.previousTrack(req.user.id);
+      return res.json({ success: true, message: 'Skipped to previous track' });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Use ?action=next or ?action=previous'
+      });
+    }
+  } catch (error) {
+    console.error(`❌ Skip Track Error:`, error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to skip track' });
+  }
+};
+
+// Like a Track
+exports.likeTrack = async (req, res) => {
+  try {
+    const { trackId } = req.body;
+    if (!trackId) {
+      return res.status(400).json({ success: false, message: 'trackId is required' });
+    }
+
+    await spotifyService.likeTrack(req.user.id, trackId);
+    res.json({ success: true, message: 'Track added to liked songs' });
+  } catch (error) {
+    console.error("❌ Like Track Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to like track' });
+  }
+};
+
+// Add Track to Playlist
+exports.addTrackToPlaylist = async (req, res) => {
+  try {
+    const { playlistId, trackUri } = req.body;
+    if (!playlistId || !trackUri) {
+      return res.status(400).json({ success: false, message: 'playlistId and trackUri are required' });
+    }
+
+    await spotifyService.addTrackToPlaylist(req.user.id, playlistId, trackUri);
+    res.json({ success: true, message: 'Track added to playlist' });
+  } catch (error) {
+    console.error("❌ Add to Playlist Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to add track to playlist' });
+  }
+};
+
+
+// Unlike a Track
+exports.unlikeTrack = async (req, res) => {
+  try {
+    const { trackId } = req.body;
+    if (!trackId) {
+      return res.status(400).json({ success: false, message: 'trackId is required' });
+    }
+
+    await spotifyService.unlikeTrack(req.user.id, trackId);
+    res.json({ success: true, message: 'Track removed from liked songs' });
+  } catch (error) {
+    console.error("❌ Unlike Track Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to unlike track' });
+  }
+};
+
+// Remove Track from Playlist
+exports.removeTrackFromPlaylist = async (req, res) => {
+  try {
+    const { playlistId, trackUri } = req.body;
+    if (!playlistId || !trackUri) {
+      return res.status(400).json({ success: false, message: 'playlistId and trackUri are required' });
+    }
+
+    await spotifyService.removeTrackFromPlaylist(req.user.id, playlistId, trackUri);
+    res.json({ success: true, message: 'Track removed from playlist' });
+  } catch (error) {
+    console.error("❌ Remove from Playlist Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to remove track from playlist' });
+  }
+};
+
+
+exports.isTrackLiked = async (req, res) => {
+  try {
+    const { trackId } = req.query;
+    if (!trackId) {
+      return res.status(400).json({ success: false, message: 'trackId is required' });
+    }
+
+    const liked = await spotifyService.isTrackLiked(req.user.id, trackId);
+    res.json({ success: true, liked });
+  } catch (error) {
+    console.error("❌ Check Liked Error:", error.response?.data || error.message || error);
+    res.status(500).json({ success: false, message: 'Failed to check liked status' });
   }
 };
