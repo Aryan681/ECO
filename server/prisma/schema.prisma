@@ -21,6 +21,7 @@ model User {
   avatarUrl    String?
   githubUsername   String? 
   SpotifyAccount SpotifyAccount?
+  PomodoroSession PomodoroSession[]
 }
 
 model Profile {
@@ -46,6 +47,19 @@ model Project {
   githubRepoId Int?    
   githubUrl   String?  
 }
+
+model PomodoroSession {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  startTime DateTime
+  endTime   DateTime?
+  status    String   // started, paused, completed
+  duration  Int      // in seconds
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 
 model Log {
   id        String   @id @default(uuid())
