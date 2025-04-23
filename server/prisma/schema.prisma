@@ -22,6 +22,8 @@ model User {
   githubUsername   String? 
   SpotifyAccount SpotifyAccount?
   PomodoroSession PomodoroSession[]
+  firebaseUid String? @unique
+
 }
 
 model Profile {

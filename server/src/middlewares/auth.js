@@ -1,15 +1,15 @@
-// middleware/auth.js
 const { jwtVerify } = require('jose');
 const { createSecretKey } = require('crypto');
 const logger = require('../utils/logger');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require("axios");
+const admin = require("firebase-admin");
 
 const accessTokenSecret = createSecretKey(Buffer.from(process.env.JWT_ACCESS_SECRET || 'default_access_secret', 'utf-8'));
 
 /**
- * Main authentication middleware that handles both JWT and GitHub tokens
+ * Main authentication middleware that handles JWT, GitHub, and Firebase Google tokens.
  */
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -24,12 +24,14 @@ const authenticate = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    // Check if it's a GitHub token (starts with gho_)
+    // If token appears to be a GitHub token (e.g., starts with gho_):
     if (token.startsWith('gho_')) {
       return await authenticateGitHubToken(token, req, res, next);
     }
     
-    // Otherwise treat as JWT
+ 
+
+    // Otherwise, assume JWT (local)
     return await authenticateJWT(token, req, res, next);
   } catch (error) {
     logger.error('Authentication error:', error);
@@ -41,7 +43,7 @@ const authenticate = async (req, res, next) => {
 };
 
 /**
- * Handles JWT token authentication
+ * Handles JWT token authentication.
  */
 const authenticateJWT = async (token, req, res, next) => {
   const { payload } = await jwtVerify(token, accessTokenSecret);
@@ -52,32 +54,26 @@ const authenticateJWT = async (token, req, res, next) => {
   next();
 };
 
+
+
 /**
- * Handles GitHub token authentication
+ * Handles GitHub token authentication.
  */
 const authenticateGitHubToken = async (token, req, res, next) => {
   try {
-    // 1. Verify token with GitHub API
     const githubResponse = await axios.get('https://api.github.com/user', {
       headers: {
         Authorization: `token ${token}`,
         Accept: 'application/vnd.github.v3+json'
       }
     });
-
-    // 2. Find user in database using correct field names
     const user = await prisma.user.findFirst({
       where: {
         githubAccessToken: token,
         githubId: githubResponse.data.id.toString()
       },
-      select: {
-        id: true,
-        authMethod: true, // Changed from authProvider to match schema
-        email: true
-      }
+      select: { id: true, authMethod: true, email: true }
     });
-
     if (!user) {
       return res.status(403).json({
         success: false,
@@ -85,15 +81,14 @@ const authenticateGitHubToken = async (token, req, res, next) => {
         action: 'Complete GitHub OAuth setup first'
       });
     }
-
     req.user = {
       id: user.id,
-      authMethod: user.authMethod // Updated field name
+      authMethod: 'github',
+      email: user.email 
     };
     next();
   } catch (error) {
     console.error('GitHub token verification failed:', error);
-    
     if (error.response?.status === 401) {
       return res.status(401).json({
         success: false,
@@ -101,26 +96,23 @@ const authenticateGitHubToken = async (token, req, res, next) => {
         action: 'Reauthenticate with GitHub'
       });
     }
-    
     next(error);
   }
 };
+
 /**
- * Checks authentication method for login attempts
+ * Checks authentication method for login attempts.
  */
 const checkAuthMethod = async (req, res, next) => {
   try {
     const { email } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
-
     if (!user) {
       return res.status(401).json({ 
         success: false,
         message: 'Invalid credentials' 
       });
     }
-
-    // Block password login for GitHub-authenticated users
     if (user.authMethod === 'github') {
       return res.status(403).json({
         success: false,
@@ -128,42 +120,39 @@ const checkAuthMethod = async (req, res, next) => {
         authMethod: 'github'
       });
     }
-
     next();
   } catch (error) {
     next(error);
   }
 };
+
+/**
+ * Ensures Spotify connection before using Spotify features.
+ */
 const requireSpotifyConnection = async (req, res, next) => {
   const userId = req.user?.id;
-
   if (!userId) {
     return res.status(401).json({
       success: false,
       message: 'User not authenticated'
     });
   }
-
-  const spotifyAccount = await prisma.spotifyAccount.findUnique({
-    where: { userId }
-  });
-
+  const spotifyAccount = await prisma.spotifyAccount.findUnique({ where: { userId } });
   if (!spotifyAccount) {
     return res.status(403).json({
       success: false,
       message: 'Spotify account not connected'
     });
   }
-
-  // Attach Spotify account details if needed downstream
   req.spotifyAccount = spotifyAccount;
-
   next();
 };
 
+
 module.exports = {
-  authenticate, // Main authentication middleware
-  authenticateJWT, // For specific JWT cases
+  authenticate,
+  authenticateJWT,
+
   checkAuthMethod,
   requireSpotifyConnection
 };

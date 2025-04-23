@@ -18,6 +18,7 @@ const redisClient = require('./src/utils/redisClient');
 const profileRoutes = require('./src/routes/profileRoutes'); 
 const path = require('path');
 const githubAuthRoutes = require('./src/routes/githubAuthRoutes'); 
+// const googleAuthRoutes = require('./src/routes/googleAuthRoutes');
 const passport = require('./src/config/passport1');
 const session = require('express-session');
 const spotifyRoutes = require('./src/routes/spotifyRoutes');
@@ -46,6 +47,7 @@ app.use(passport.session());
 
 // Routes
 app.use('/api/github', githubAuthRoutes);
+// app.use('/api/google', googleAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/users', userRoutes);
