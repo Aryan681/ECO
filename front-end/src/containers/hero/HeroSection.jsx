@@ -23,7 +23,7 @@ const HeroSection = () => {
     gsap.to(patternRef.current, {
       x: 100,
       y: 50,
-      duration: 100,
+      duration: 40,
       repeat: -1,
       yoyo: true,
       ease: "none"
