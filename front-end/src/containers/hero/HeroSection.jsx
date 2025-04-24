@@ -4,7 +4,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import HeroAnimation from "../../animations/HeroAnimation";
 import FeatureCards from "./FeaturtefHighlight";
-import FeatureDescription from "./FeatureDescription";
+
 
 const HeroSection = () => {
   const sectionRef = useRef(null);
@@ -135,7 +135,7 @@ const HeroSection = () => {
       {/* Infinite moving code pattern background */}
       <div 
         ref={patternRef}
-        className="absolute inset-0 opacity-[0.03] overflow-hidden"
+        className="absolute inset-0 opacity-[0.1] overflow-hidden"
       >
         <div className="absolute inset-0 w-[200%] h-[200%] bg-[length:40px_40px] bg-repeat"
           style={{

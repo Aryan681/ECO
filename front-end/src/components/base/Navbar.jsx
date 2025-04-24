@@ -46,10 +46,10 @@ const Navbar = () => {
   
   // Developer-focused navigation
   const navLinks = [
-    { text: 'features()', path: '/#features' },
+    { text: 'Hero{}', path: '/' },
     { text: 'docs', path: '/docs' },
     { text: 'Dashboard', path: '/dashboard' },
-    { text: 'pricing', path: '/pricing' }
+    { text: 'About[]', path: '/about' }
   ];
   
   return (
