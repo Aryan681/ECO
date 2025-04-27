@@ -43,7 +43,7 @@ const githubCallback = (req, res, next) => {
           email: user.email,
           name: user.profile?.firstName || user.profile?.username,
           avatar: user.profile?.profileImage,
-          authMethod: 'github'
+          authProvider: 'github'
         },
         tokens: {
           accessToken,

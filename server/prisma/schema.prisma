@@ -11,7 +11,7 @@ model User {
   id               String    @id @default(uuid())
   email            String    @unique
   password         String?   // Keep as required
-  authMethod        String    @default("local") // "github" or "local"
+  authProvider       String    @default("local") // "github" or "local"
   githubId         String?
   githubAccessToken String?
   createdAt        DateTime  @default(now())

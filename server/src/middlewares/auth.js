@@ -49,7 +49,7 @@ const authenticateJWT = async (token, req, res, next) => {
   const { payload } = await jwtVerify(token, accessTokenSecret);
   req.user = { 
     id: payload.userId,
-    authMethod: payload.authMethod
+    authProvider: payload.authProvider
   };
   next();
 };
@@ -72,7 +72,7 @@ const authenticateGitHubToken = async (token, req, res, next) => {
         githubAccessToken: token,
         githubId: githubResponse.data.id.toString()
       },
-      select: { id: true, authMethod: true, email: true }
+      select: { id: true , authProvider: true, email: true }
     });
     if (!user) {
       return res.status(403).json({
@@ -83,7 +83,7 @@ const authenticateGitHubToken = async (token, req, res, next) => {
     }
     req.user = {
       id: user.id,
-      authMethod: 'github',
+      authProvider: 'github',
       email: user.email 
     };
     next();
@@ -113,11 +113,11 @@ const checkAuthMethod = async (req, res, next) => {
         message: 'Invalid credentials' 
       });
     }
-    if (user.authMethod === 'github') {
+    if (user.authProvider === 'github') {
       return res.status(403).json({
         success: false,
         message: 'This account uses GitHub login',
-        authMethod: 'github'
+        authProvider: 'github'
       });
     }
     next();
@@ -152,7 +152,6 @@ const requireSpotifyConnection = async (req, res, next) => {
 module.exports = {
   authenticate,
   authenticateJWT,
-
   checkAuthMethod,
   requireSpotifyConnection
 };

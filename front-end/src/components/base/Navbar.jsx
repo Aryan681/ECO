@@ -1,12 +1,35 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
+import axios from 'axios';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const location = useLocation();
-  
+  const navigate = useNavigate();
+
+  // Check auth status on mount and location change
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('accessToken');
+      const userData = localStorage.getItem('user');
+      const profileData = localStorage.getItem('profile');
+      
+      if (token && userData) {
+        setUser(JSON.parse(userData));
+        setProfile(profileData ? JSON.parse(profileData) : null);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+    };
+
+    checkAuth();
+  }, [location]);
+
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
   useEffect(() => {
@@ -43,7 +66,41 @@ const Navbar = () => {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location]);
-  
+
+  const handleLogout = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      await axios.post('http://localhost:3000/api/auth/logout', {
+        refreshToken
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      // Clear user data
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('profile');
+      
+      setUser(null);
+      setProfile(null);
+      navigate('/');
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Even if logout fails, clear local storage
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('profile');
+      setUser(null);
+      setProfile(null);
+      navigate('/');
+    }
+  };
+
   // Developer-focused navigation
   const navLinks = [
     { text: 'Hero{}', path: '/' },
@@ -53,16 +110,14 @@ const Navbar = () => {
   ];
   
   return (
-    <header 
-      className={`fixed w-full z-50 transition-all duration-300 border-b ${
-        isScrolled 
-          ? 'bg-gray-950/95 backdrop-blur-md border-gray-800 py-4' 
-          : 'bg-gray-950/80 border-transparent py-7'
-      }`}
-    >
-      <div className="container mx-auto px-3">
+    <header className={`fixed w-full z-50 transition-all duration-300 border-b ${
+      isScrolled 
+        ? 'bg-gray-950/95 backdrop-blur-md border-gray-800 py-4' 
+        : 'bg-gray-950/80 border-transparent py-7'
+    }`}>
+   <div className="container mx-auto px-3">
         <div className="flex justify-between items-center">
-          {/* Logo with terminal style */}
+          {/* Logo */}
           <Link to="/" className="flex items-center group">
             <span className="font-mono text-xl text-cyan-400 mr-1">$</span>
             <span className="font-mono font-bold text-white group-hover:text-cyan-400 transition duration-300">
@@ -88,20 +143,49 @@ const Navbar = () => {
             ))}
           </nav>
           
-          {/* Auth Buttons - CLI style */}
-          <div className="hidden md:flex items-center space-x-3">
-            <Link 
-              to="/auth/login"
-              className="nav-item font-mono text-sm text-gray-400 hover:text-white px-3 py-1 border border-gray-700 hover:border-gray-600 rounded transition duration-300"
-            >
-              login
-            </Link>
-            <Link 
-              to="/auth/register"
-              className="nav-item font-mono text-sm bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-gray-900 px-3 py-1 rounded transition duration-300"
-            >
-              npm start
-            </Link>
+          {/* User Profile or Auth Buttons */}
+               <div className="hidden md:flex items-center space-x-3">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-800 border border-cyan-400 flex items-center justify-center overflow-hidden">
+                    {user.profile?.firstName ? (
+                      <span className="text-cyan-400 text-xs font-bold">
+                        {user.profile.firstName.charAt(0).toUpperCase()}
+                      </span>
+                    ) : (
+                      <span className="text-cyan-400 text-xs font-bold">
+                        {user.email.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-mono text-sm text-gray-300">
+                    {user.profile?.firstName || user.email.split('@')[0]}
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="font-mono text-sm text-gray-400 hover:text-red-400 px-3 py-1 border border-gray-700 hover:border-red-400/30 rounded transition duration-300"
+                >
+                  $ logout
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link 
+                  to="/auth/login"
+                  className="font-mono text-sm text-gray-400 hover:text-white px-3 py-1 border border-gray-700 hover:border-gray-600 rounded transition duration-300"
+                >
+                  login
+                </Link>
+                <Link 
+                  to="/auth/register"
+                  className="font-mono text-sm bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-gray-900 px-3 py-1 rounded transition duration-300"
+                >
+                  npm start
+                </Link>
+              </>
+            )}
           </div>
           
           {/* Mobile Menu Button - Hamburger as {} */}
@@ -112,9 +196,9 @@ const Navbar = () => {
               aria-label="Toggle menu"
             >
               {isMenuOpen ? (
-                <span className="text-cyan-400">&#x2715;</span> // Close icon
+                <span className="text-cyan-400">&#x2715;</span>
               ) : (
-                <span>&#123;...&#125;</span> // Curly braces
+                <span>&#123;...&#125;</span>
               )}
             </button>
           </div>
@@ -138,18 +222,48 @@ const Navbar = () => {
                 </Link>
               ))}
               <hr className="border-gray-800 my-1" />
-              <Link 
-                to="/auth/login"
-                className="font-mono text-sm text-gray-400 hover:text-white py-1.5 transition duration-300"
-              >
-                $ login
-              </Link>
-              <Link 
-                to="/auth/register"
-                className="font-mono text-sm bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-gray-900 py-1.5 px-3 rounded text-center transition duration-300"
-              >
-                 register
-              </Link>
+              
+              {user ? (
+                <>
+                  <div className="flex items-center space-x-3 py-1.5">
+                    <div className="w-6 h-6 rounded-full bg-gray-800 border border-cyan-400 flex items-center justify-center overflow-hidden">
+                      {profile?.firstName ? (
+                        <span className="text-cyan-400 text-xs">
+                          {profile.firstName.charAt(0).toUpperCase()}
+                        </span>
+                      ) : (
+                        <span className="text-cyan-400 text-xs">
+                          {user.email.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-mono text-sm text-gray-300">
+                      {profile?.firstName || user.email.split('@')[0]}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="font-mono text-sm text-red-400 hover:text-red-300 py-1.5 pl-2 border-l-2 border-red-400/30 transition duration-300 text-left"
+                  >
+                    $ logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/auth/login"
+                    className="font-mono text-sm text-gray-400 hover:text-white py-1.5 transition duration-300"
+                  >
+                    $ login
+                  </Link>
+                  <Link 
+                    to="/auth/register"
+                    className="font-mono text-sm bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-gray-900 py-1.5 px-3 rounded text-center transition duration-300"
+                  >
+                    register
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         )}

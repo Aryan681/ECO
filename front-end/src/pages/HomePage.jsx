@@ -5,7 +5,7 @@ import HeroSection from '../containers/hero/HeroSection';
 const HomePage = () => {
   useEffect(() => {
     // Set page title
-    document.title = 'Eco ';
+    document.title = 'ECO ';
   }, []);
 
   return (

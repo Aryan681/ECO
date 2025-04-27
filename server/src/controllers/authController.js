@@ -5,10 +5,17 @@ const logger = require('../utils/logger');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Cookie configuration (shared for all auth routes)
+const cookieConfig = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+  sameSite: 'Strict', // Prevent CSRF attacks
+  domain: process.env.COOKIE_DOMAIN || 'localhost',
+};
+
 const register = async (req, res, next) => {
   try {
-    // Validate request data
-    const validationResult = validateRegisterData(req.body); 
+    const validationResult = validateRegisterData(req.body);
     if (!validationResult.success) {
       return res.status(400).json({ 
         success: false,
@@ -18,9 +25,8 @@ const register = async (req, res, next) => {
     }
     
     const { email, password, name } = validationResult.data;
-    
-    // Check if user already exists
     const existingUser = await authService.findUserByEmail(email);
+    
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -28,35 +34,25 @@ const register = async (req, res, next) => {
       });
     }
     
-    // Create new user
     const user = await authService.createUser({ email, password, name });
-    
-    // Generate tokens
     const { accessToken, refreshToken } = await authService.generateAuthTokens(user);
     
-    // Format user data for response
-    const userData = {
-      id: user.id,
-      email: user.email,
-      createdAt: user.createdAt,
-      profile: user.profile ? {
-        id: user.profile.id,
-        firstName: user.profile.firstName,
-        lastName: user.profile.lastName,
-        bio: user.profile.bio
-      } : null
-    };
+    // Set cookies
+    res.cookie('accessToken', accessToken, {
+      ...cookieConfig,
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
     
-    // Return success response
+    res.cookie('refreshToken', refreshToken, {
+      ...cookieConfig,
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       data: {
-        user: userData,
-        tokens: {
-          accessToken,
-          refreshToken
-        }
+        user: formatUserResponse(user)
       }
     });
   } catch (error) {
@@ -67,7 +63,6 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    // Validate request data
     const validationResult = validateLoginData(req.body);
     if (!validationResult.success) {
       return res.status(400).json({ 
@@ -78,9 +73,8 @@ const login = async (req, res, next) => {
     }
     
     const { email, password } = validationResult.data;
-    
-    // Find user by email
     const user = await authService.findUserByEmail(email);
+    
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -88,20 +82,11 @@ const login = async (req, res, next) => {
       });
     }
     
-    // Handle GitHub-authenticated users
     if (user.authProvider === 'github') {
       return res.status(403).json({
         success: false,
-        message: 'This account uses GitHub login. Please sign in with GitHub.',
-        authMethods: ['github'] // Frontend can use this to show GitHub button
-      });
-    }
-    
-    // Verify password for local users
-    if (!user.password) {
-      return res.status(403).json({
-        success: false,
-        message: 'Password login not available for this account'
+        message: 'Please sign in with GitHub',
+        authProvider: ['github']
       });
     }
     
@@ -113,34 +98,24 @@ const login = async (req, res, next) => {
       });
     }
     
-    // Generate tokens
     const { accessToken, refreshToken } = await authService.generateAuthTokens(user);
     
-    // Format user data for response
-    const userData = {
-      id: user.id,
-      email: user.email,
-      authProvider: user.authProvider, // Include auth method in response
-      createdAt: user.createdAt,
-      profile: user.profile ? {
-        id: user.profile.id,
-        firstName: user.profile.firstName,
-        lastName: user.profile.lastName,
-        bio: user.profile.bio,
-        avatarUrl: user.profile.avatarUrl
-      } : null
-    };
+    // Set cookies
+    res.cookie('accessToken', accessToken, {
+      ...cookieConfig,
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
     
-    // Return success response
+    res.cookie('refreshToken', refreshToken, {
+      ...cookieConfig,
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.status(200).json({
       success: true,
       message: 'Login successful',
       data: {
-        user: userData,
-        tokens: {
-          accessToken,
-          refreshToken
-        }
+        user: formatUserResponse(user)
       }
     });
   } catch (error) {
@@ -151,7 +126,7 @@ const login = async (req, res, next) => {
 
 const refreshToken = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.cookies;
     
     if (!refreshToken) {
       return res.status(400).json({
@@ -160,7 +135,6 @@ const refreshToken = async (req, res, next) => {
       });
     }
     
-    // Verify refresh token and generate new tokens
     const tokens = await authService.refreshAuthTokens(refreshToken);
     
     if (!tokens) {
@@ -170,13 +144,15 @@ const refreshToken = async (req, res, next) => {
       });
     }
     
-    // Return new tokens
+    // Set new cookies
+    res.cookie('accessToken', tokens.accessToken, {
+      ...cookieConfig,
+      maxAge: 15 * 60 * 1000
+    });
+    
     res.status(200).json({
       success: true,
-      message: 'Tokens refreshed successfully',
-      data: {
-        tokens
-      }
+      message: 'Tokens refreshed successfully'
     });
   } catch (error) {
     logger.error('Token refresh error:', error);
@@ -186,7 +162,7 @@ const refreshToken = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.cookies;
     
     if (!refreshToken) {
       return res.status(400).json({
@@ -195,8 +171,11 @@ const logout = async (req, res, next) => {
       });
     }
     
-    // Invalidate the refresh token
     await authService.invalidateRefreshToken(refreshToken);
+    
+    // Clear cookies
+    res.clearCookie('accessToken', cookieConfig);
+    res.clearCookie('refreshToken', cookieConfig);
     
     res.status(200).json({
       success: true,
@@ -207,6 +186,21 @@ const logout = async (req, res, next) => {
     next(error);
   }
 };
+
+// Helper function to format user response
+const formatUserResponse = (user) => ({
+  id: user.id,
+  email: user.email,
+  authProvider: user.authProvider,
+  createdAt: user.createdAt,
+  profile: user.profile ? {
+    id: user.profile.id,
+    firstName: user.profile.firstName,
+    lastName: user.profile.lastName,
+    bio: user.profile.bio,
+    avatarUrl: user.profile.avatarUrl
+  } : null
+});
 
 const getProfile = async (req, res, next) => {
   try {
@@ -273,11 +267,46 @@ const getProfile = async (req, res, next) => {
   }
 };
 
+const getCurrentUser = async (req, res, next) => {
+  try {
+    // The authenticateJWT middleware already verified the token and attached the user
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+
+    // Fetch fresh user data from database
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { profile: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: formatUserResponse(user)
+      }
+    });
+  } catch (error) {
+    logger.error('Get current user error:', error);
+    next(error);
+  }
+};
 
 module.exports = {
   register,
   login,
   refreshToken,
   logout,
-  getProfile
+  getProfile,
+  getCurrentUser
 };

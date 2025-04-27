@@ -2,8 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import HeroAnimation from "../../animations/HeroAnimation";
-import FeatureCards from "./FeaturtefHighlight";
+import FeatureCards from "../../components/hero/FeaturtefHighlight";
 
 
 const HeroSection = () => {

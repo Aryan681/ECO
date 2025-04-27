@@ -76,7 +76,7 @@ passport.use(
 
         // User creation/update data
         const userData = {
-          authMethod: "github",
+          authProvider: "github",
           githubId: profile.id,
           githubAccessToken: accessToken,
           githubUsername: profile.username,
@@ -117,7 +117,7 @@ passport.use(
         const token = jwt.sign(
           { 
             userId: user.id,
-            authMethod: "github",
+            authProvider: "github",
             email: user.email
           },
           process.env.JWT_SECRET || "your_jwt_secret_here",
@@ -128,7 +128,7 @@ passport.use(
           user: {
             id: user.id,
             email: user.email,
-            authMethod: user.authMethod,
+            authProvider: user.authProvider,
             profile: user.profile
           },
           token,

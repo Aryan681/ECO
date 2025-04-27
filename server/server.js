@@ -24,17 +24,20 @@ const session = require('express-session');
 const spotifyRoutes = require('./src/routes/spotifyRoutes');
 const PomoRoute = require ('./src/routes/pomoRoute')
 // const connectMDB = require('./src/config/db');
-  
+const cookieParser = require('cookie-parser');
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+app.use(cookieParser());
 // Middleware
 app.use(pinoHttp({ logger }));
 app.use(helmet());
 app.use(compression());
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173", // your frontend URL
+  credentials: true               // allow cookies, auth headers, etc.
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
