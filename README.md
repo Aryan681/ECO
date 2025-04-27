@@ -1,122 +1,122 @@
-# **🌿 Eco - A Personalized Developer Ecosystem**
+# 🌿 **Eco – Your Personalized Developer Ecosystem**
 
-🚀 **Eco** is a powerful, all-in-one ecosystem designed for developers to streamline coding, collaboration, and project management. It integrates a **code editor, compiler, version control, and cloud-based execution**, making it a **next-gen developer workspace**.
-
-## **✨ Features**
-
-- 🔥 **Online Code Editor** – Write, run, and test code in multiple languages  
-- 🐳 **Dockerized Execution** – Secure and isolated code execution using **Docker containers**  
-- ⚡ **Real-time Collaboration** – Work with team members in a **live coding environment**  
-- 🗃️ **Hybrid Database (PostgreSQL + MongoDB)** – Structured & unstructured data handling  
-- 🔑 **Authentication via GitHub OAuth** – Secure login using **GitHub integration**  
-- 📦 **GitHub Repository Management** – Create, list, delete, and manage repositories via API  
-- 📊 **Analytics & Logs** – Monitor project activities and execution logs  
-- ☁️ **Cloud-based Execution** – Run code efficiently on cloud infrastructure  
+Welcome to **Eco** – a smart, modern workspace built **just for developers**. Whether you’re coding solo or collaborating with a team, Eco brings together **code editing, version control, music, and productivity** – all in one beautifully integrated platform.
 
 ---
 
-## **🚀 Tech Stack**
+## ✨ **What You Can Do with Eco**
 
-| Technology   | Usage |
-|-------------|--------|
-| **Node.js** | Backend Server |
-| **Express.js** | API Framework |
-| **React.js** | Frontend UI |
-| **Docker** | Containerized Code Execution |
-| **Kubernetes** | Orchestration for containers |
-| **Redis** | Caching & Rate Limiting |
-| **PostgreSQL** | Structured Data Storage |
-| **MongoDB** | Unstructured Data Storage |
-| **Prisma ORM** | Database Management |
-| **GitHub API** | Repository & OAuth Integration |
+- 🔥 **Write & Run Code Online**  
+  A powerful editor where you can write, run, and test code in **multiple languages**, directly from your browser.
 
----
+- 🐳 **Safe, Dockerized Execution**  
+  Your code runs inside **isolated Docker containers**, ensuring speed and security.
 
-## **🛠️ Installation & Setup**
+- ⚡ **Real-time Collaboration**  
+  Share a workspace with teammates and code together live.
 
-### **🔹 Prerequisites**
-Ensure you have the following installed:  
-- [Node.js](https://nodejs.org/)  
-- [Docker](https://www.docker.com/)  
-- [PostgreSQL](https://www.postgresql.org/)  
-- [MongoDB](https://www.mongodb.com/)  
+- 🧠 **Stay Productive with the Pomodoro Timer**  
+  Built-in focus sessions with **start, pause, resume, reset**, and **session history** tracking.
 
-### **🔹 Clone the Repository**
-```sh
-git clone https://github.com/Aryan681/eco.git
-cd eco
-```
+- 🎵 **Connect Spotify to Code with Flow**  
+  Play your favorite playlists and tracks without leaving your workspace.
 
-### **🔹 Install Dependencies**
-```sh
-npm install
-```
+- 🔐 **Secure Login via GitHub**  
+  One-click sign-in using your GitHub account.
 
-### **🔹 Set Up Environment Variables**
-Create a **.env** file and add:
-```sh
-PORT=3000
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=http://localhost:3000/api/github/callback
-JWT_ACCESS_SECRET=your_jwt_secret
-REDIS_URL=redis://localhost:6379
-POSTGRES_URL=postgresql://user:password@localhost:5432/eco
-MONGO_URI=mongodb://localhost:27017/eco
-```
+- 📂 **Manage GitHub Repos Effortlessly**  
+  Create, browse, and delete repositories right from Eco.
 
-### **🔹 Start the Server**
-```sh
-npm start
-```
-Server will run at **http://localhost:3000**  
+- ☁️ **Cloud-Powered Backend**  
+  Your code is run, saved, and tracked using a cloud-native infrastructure.
 
 ---
 
-## **📌 API Endpoints**
+## 🚀 **Tech that Powers Eco**
 
-### **🔐 Authentication**
-| Method | Endpoint | Description |
-|--------|---------|------------|
-| `GET` | `/api/auth/github` | Redirect to GitHub OAuth |
-| `GET` | `/api/github/callback` | GitHub OAuth Callback |
-| `GET` | `/api/auth/me` | Get authenticated user info |
-
-### **📂 GitHub Repository Management**
-| Method | Endpoint | Description |
-|--------|---------|------------|
-| `GET` | `/api/github/repos` | List all GitHub repositories |
-| `POST` | `/api/github/repos` | Create a new repository |
-| `DELETE` | `/api/github/repos/:owner/:repo` | Delete a repository |
-
----
-
-## **🤝 Contributing**
-We welcome contributions!  
-1. Fork the repository  
-2. Create a new branch (`git checkout -b feature-name`)  
-3. Commit changes (`git commit -m "Added new feature"`)  
-4. Push to GitHub (`git push origin feature-name`)  
-5. Open a **Pull Request** 🚀  
+| Technology     | Role                              |
+|----------------|-----------------------------------|
+| **React.js**   | Interactive Frontend UI           |
+| **Node.js**    | Backend API Engine                |
+| **Express.js** | Server Framework                  |
+| **Docker**     | Secure Containerized Execution    |
+| **Kubernetes** | Container Orchestration           |
+| **Redis**      | Rate Limiting & Caching           |
+| **PostgreSQL** | User Data & Project Storage       |
+| **MongoDB**    | Logs & Real-Time Event Storage    |
+| **Spotify API**| Music Integration                 |
+| **GitHub OAuth**| Seamless Authentication & Repos  |
 
 ---
 
-## **🛡️ License**
-This project is licensed under the **MIT License**.  
+## 🛠️ **Getting Started (For Registered Users)**
+
+> Eco is currently in **private access mode**. You need a registered account to log in.
+
+### 👉 Steps to Start Using Eco:
+
+1. Visit: [https://eco-dev.io](https://eco-dev.io) *(replace with your actual domain)*
+2. Click **“Login with GitHub”**
+3. Connect your Spotify (optional) to enable music features
+4. Start coding, collaborating, and focusing – all in one place!
 
 ---
 
-## **📬 Contact & Support**
-👤 **Author:** Aryan Singh  
+## 🎯 **Pomodoro Timer Built-In**
+
+Stay focused and manage your time effectively:
+
+- Start a **25-minute** coding sprint
+- Pause or resume anytime
+- View session history to track productivity
+
+---
+
+## 🎵 **Spotify + Eco = Developer Zen**
+
+Once connected, you can:
+
+- Browse your playlists  
+- View tracks  
+- Play/pause/resume any song  
+- All inside your developer dashboard
+
+> *Focus + Flow. No more tab switching.*
+
+---
+
+## 🧑‍💻 **Project Management with GitHub**
+
+Easily connect your GitHub and:
+
+- View your repositories  
+- Create new ones  
+- Delete old repos  
+- All via a clean and simple interface
+
+---
+
+## ❓ **Need Help or Have Feedback?**
+
+We’re always improving Eco based on developer feedback.  
+For support, questions, or early access:
+
 📧 Email: [Aryannaruka7@gmail.com](mailto:Aryannaruka7@gmail.com)  
-🌍 GitHub: [Aryan681](https://github.com/Aryan681)  
+🌍 Developer: [Aryan Singh](https://github.com/Aryan681)
 
 ---
 
-### **🚀 Start Coding with Eco Now!**
-```sh
-git clone https://github.com/Aryan681/eco.git
-npm install
-npm start
-```  
-🔥 **Happy Coding!** 🔥  
+## 🔒 **Your Data is Safe**
+
+Eco uses **industry-standard encryption**, **OAuth security**, and **isolated containers** to keep your work safe and private.
+
+---
+
+## 🚀 **Experience Eco Now**
+
+Your workspace. Your music. Your flow.  
+**All in one place.**
+
+👉 Visit [https://eco-dev.io](https://eco-dev.io) to get started. *(replace with real link)*
+
+---
