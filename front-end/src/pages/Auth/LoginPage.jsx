@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import api from '../../api/axios'; 
+import api from '../../api/axios';
+
 const LoginPage = () => {
   const formRef = useRef();
   const terminalRef = useRef();
   const navigate = useNavigate();
 
-  // Form state
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -16,7 +15,6 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -25,57 +23,70 @@ const LoginPage = () => {
     }));
   };
 
-  // Handle email login
- const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+ // Handle email login
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      const response = await api.post('/auth/login', {
-        email: formData.email,
-        password: formData.password
-      });
+  try {
+    const response = await api.post('/auth/login', {
+      email: formData.email,
+      password: formData.password
+    });
 
-      // No need to handle tokens - they're in cookies
-      console.log('Login successful:', response.data);
-      
-      // Redirect to home/dashboard
-      navigate('/');
-      
-    } catch (err) {
-      console.error('Login error:', err.response?.data);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
+    // Check if response has data property (your structure)
+    const responseData = response.data.data || response.data;
+    
+    // Store tokens in localStorage
+    localStorage.setItem('token', responseData.tokens.accessToken);
+    localStorage.setItem('refreshToken', responseData.tokens.refreshToken);
+    localStorage.setItem('user', JSON.stringify(responseData.user));
+    // console.log(responseData.tokens.accessToken)
+    console.log('Login successful:', responseData);
+    navigate('/');
+    
+  } catch (err) {
+    console.error('Login error:', err.response?.data);
+    const errorMessage = err.response?.data?.message || 
+                        err.response?.data?.data?.message || 
+                        'Login failed. Please try again.';
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  // Handle GitHub authentication
   const handleGitHubAuth = async () => {
     setLoading(true);
     setError('');
     
     try {
-      // Redirect to GitHub OAuth
-      window.location.href = 'http://localhost:3000/api/github/login';
+      const authWindow = window.open(
+        'http://localhost:3000/api/auth/github', 
+        '_blank',
+        'width=500,height=600'
+      );
       
-      // Alternatively, if using popup:
-      // const popup = window.open('http://localhost:3000/api/github/login', '_blank');
-      // const checkPopup = setInterval(() => {
-      //   if (popup.closed) {
-      //     clearInterval(checkPopup);
-      //     // Check if user is authenticated
-      //     navigate('/dashboard');
-      //   }
-      // }, 500);
+      const checkAuth = setInterval(() => {
+        if (authWindow.closed) {
+          clearInterval(checkAuth);
+          const token = localStorage.getItem('token');
+          if (token) {
+            navigate('/');
+          } else {
+            setError('GitHub authentication failed');
+          }
+        }
+      }, 500);
     } catch (err) {
       console.error('GitHub auth error:', err);
-      setError('Failed to initiate GitHub authentication');
+      setError('GitHub authentication failed');
+    } finally {
       setLoading(false);
     }
   };
+
 
   // Animation setup
   useEffect(() => {

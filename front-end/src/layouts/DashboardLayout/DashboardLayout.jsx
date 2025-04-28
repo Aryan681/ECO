@@ -2,6 +2,7 @@
 import React, { useId, useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import {
   FiHome,
   FiCode,
@@ -17,7 +18,50 @@ import {
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { motion } from "framer-motion";
-
+const features = [
+  {
+    id: "home",
+    icon: <FiHome className="text-xl" />,
+    title: "Home",
+    description: "Return to homepage",
+    color: "text-blue-400",
+  },
+  {
+    id: "dashboard",
+    icon: <FiGrid className="text-xl" />,
+    title: "Dashboard",
+    description: "Main dashboard overview",
+    color: "text-green-400",
+  },
+  {
+    id: "code",
+    icon: <FiCode className="text-xl" />,
+    title: "Code Editor",
+    description: "Write & execute code",
+    color: "text-cyan-400",
+  },
+  {
+    id: "timer",
+    icon: <FiClock className="text-xl" />,
+    title: "Pomodoro",
+    description: "Focus sessions",
+    color: "text-purple-400",
+  },
+  {
+    id: "spotify",
+    icon: <FiMusic className="text-xl" />,
+    title: "Spotify",
+    description: "Music integration",
+    color: "text-emerald-400",
+  },
+  {
+    id: "github",
+    icon: <FiGithub className="text-xl" />,
+    title: "GitHub",
+    description: "Repo management",
+    color: "text-amber-400",
+  },
+];
 const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,6 +71,32 @@ const DashboardLayout = () => {
   const sidebarRef = useRef();
   const typeRef = useRef();
   const generatedId = useId();
+
+  
+  // Handle Logout
+  const handleLogout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      
+      await axios.post(
+        "http://localhost:3000/api/auth/logout",
+        { refreshToken },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      // Clear user data regardless of API success
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      navigate("/");
+    }
+  };
 
   // Initialize particles
   useEffect(() => {
@@ -99,50 +169,7 @@ const DashboardLayout = () => {
     };
   }, [isSidebarCollapsed]);
 
-  const features = [
-    {
-      id: "home",
-      icon: <FiHome className="text-xl" />,
-      title: "Home",
-      description: "Return to homepage",
-      color: "text-blue-400",
-    },
-    {
-      id: "dashboard",
-      icon: <FiGrid className="text-xl" />,
-      title: "Dashboard",
-      description: "Main dashboard overview",
-      color: "text-green-400",
-    },
-    {
-      id: "code",
-      icon: <FiCode className="text-xl" />,
-      title: "Code Editor",
-      description: "Write & execute code",
-      color: "text-cyan-400",
-    },
-    {
-      id: "timer",
-      icon: <FiClock className="text-xl" />,
-      title: "Pomodoro",
-      description: "Focus sessions",
-      color: "text-purple-400",
-    },
-    {
-      id: "spotify",
-      icon: <FiMusic className="text-xl" />,
-      title: "Spotify",
-      description: "Music integration",
-      color: "text-emerald-400",
-    },
-    {
-      id: "github",
-      icon: <FiGithub className="text-xl" />,
-      title: "GitHub",
-      description: "Repo management",
-      color: "text-amber-400",
-    },
-  ];
+
 
   const handleFeatureClick = (featureId) => {
     setActiveFeature(featureId);
@@ -316,6 +343,7 @@ const DashboardLayout = () => {
             className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-800/30 text-red-400 ${
               isSidebarCollapsed ? "justify-center" : ""
             }`}
+            onClick={handleLogout}
             title={isSidebarCollapsed ? "Logout" : ""}
           >
             <FiLogOut className={isSidebarCollapsed ? "" : "mr-3"} />

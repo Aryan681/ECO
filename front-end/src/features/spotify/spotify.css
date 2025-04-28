@@ -1,0 +1,127 @@
+/* src/features/spotify/spotify.css */
+.spotify-player-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #2d2d2d;
+    color: white;
+    border-radius: 10px;
+  }
+  
+  .now-playing {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #1db954;
+    border-radius: 8px;
+  }
+  
+  .track-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .album-art {
+    width: 80px;
+    height: 80px;
+    border-radius: 4px;
+  }
+  
+  .track-details h4 {
+    margin: 0;
+    font-size: 18px;
+  }
+  
+  .track-details p {
+    margin: 5px 0 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+  
+  .spotify-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .spotify-controls button {
+    padding: 8px 15px;
+    background: #1db954;
+    border: none;
+    border-radius: 20px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .track-selector {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .library-section, .playlists-section {
+    flex: 1;
+  }
+  
+  .liked-songs ul, .playlist-tracks ul {
+    list-style: none;
+    padding: 0;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .track-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #444;
+  }
+  
+  .track-actions {
+    display: flex;
+    gap: 5px;
+  }
+
+  /* src/features/spotify/spotify.css */
+.spotify-login-button {
+    background-color: #1DB954;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 500px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .spotify-login-button:hover {
+    background-color: #1ed760;
+  }
+  
+  .spotify-login-button:disabled {
+    background-color: #535353;
+    cursor: not-allowed;
+  }
+  
+  .spotify-connect-prompt {
+    text-align: center;
+    padding: 40px;
+    background: #282828;
+    border-radius: 8px;
+    max-width: 500px;
+    margin: 20px auto;
+  }
+  
+  .spotify-connect-prompt p {
+    margin-bottom: 20px;
+    color: #b3b3b3;
+  }

@@ -7,23 +7,19 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
   // Check auth status on mount and location change
   useEffect(() => {
     const checkAuth = () => {
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      const profileData = localStorage.getItem('profile');
       
       if (token && userData) {
         setUser(JSON.parse(userData));
-        setProfile(profileData ? JSON.parse(profileData) : null);
       } else {
         setUser(null);
-        setProfile(null);
       }
     };
 
@@ -75,28 +71,24 @@ const Navbar = () => {
         refreshToken
       }, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
       // Clear user data
-      localStorage.removeItem('accessToken');
+      localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      localStorage.removeItem('profile');
       
       setUser(null);
-      setProfile(null);
       navigate('/');
     } catch (err) {
       console.error('Logout error:', err);
       // Even if logout fails, clear local storage
-      localStorage.removeItem('accessToken');
+      localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      localStorage.removeItem('profile');
       setUser(null);
-      setProfile(null);
       navigate('/');
     }
   };
@@ -115,7 +107,7 @@ const Navbar = () => {
         ? 'bg-gray-950/95 backdrop-blur-md border-gray-800 py-4' 
         : 'bg-gray-950/80 border-transparent py-7'
     }`}>
-   <div className="container mx-auto px-3">
+      <div className="container mx-auto px-3">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center group">
@@ -144,7 +136,7 @@ const Navbar = () => {
           </nav>
           
           {/* User Profile or Auth Buttons */}
-               <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden md:flex items-center space-x-3">
             {user ? (
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -164,7 +156,7 @@ const Navbar = () => {
                   </span>
                 </div>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="font-mono text-sm text-gray-400 hover:text-red-400 px-3 py-1 border border-gray-700 hover:border-red-400/30 rounded transition duration-300"
                 >
                   $ logout
@@ -225,22 +217,22 @@ const Navbar = () => {
               
               {user ? (
                 <>
-                  <div className="flex items-center space-x-3 py-1.5">
-                    <div className="w-6 h-6 rounded-full bg-gray-800 border border-cyan-400 flex items-center justify-center overflow-hidden">
-                      {profile?.firstName ? (
-                        <span className="text-cyan-400 text-xs">
-                          {profile.firstName.charAt(0).toUpperCase()}
-                        </span>
-                      ) : (
-                        <span className="text-cyan-400 text-xs">
-                          {user.email.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <span className="font-mono text-sm text-gray-300">
-                      {profile?.firstName || user.email.split('@')[0]}
-                    </span>
+                  <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-800 border border-cyan-400 flex items-center justify-center overflow-hidden">
+                    {user.profile?.firstName ? (
+                      <span className="text-cyan-400 text-xs font-bold">
+                        {user.profile.firstName.charAt(0).toUpperCase()}
+                      </span>
+                    ) : (
+                      <span className="text-cyan-400 text-xs font-bold">
+                        {user.email.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
+                  <span className="font-mono text-sm text-gray-300">
+                    {user.profile?.firstName || user.email.split('@')[0]}
+                  </span>
+                </div>
                   <button
                     onClick={handleLogout}
                     className="font-mono text-sm text-red-400 hover:text-red-300 py-1.5 pl-2 border-l-2 border-red-400/30 transition duration-300 text-left"
