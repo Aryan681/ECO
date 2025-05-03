@@ -14,7 +14,7 @@ const AppRoutes = () => {
       <Route path="/" element={<BaseLayout />}>
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
-        
+
         <Route path="auth" element={<AuthLayout />}>
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
@@ -22,14 +22,7 @@ const AppRoutes = () => {
       </Route>
 
       <Route path="/dashboard" element={<DashboardLayout />}>
-        <Route 
-          path="spotify" 
-          element={
-            
-              <SpotifyPage />
-            
-          } 
-        />
+        <Route path="spotify" element={<SpotifyPage />} />
       </Route>
     </Routes>
   );

@@ -1,20 +1,22 @@
 import { useState, useEffect } from "react";
-import { getSpotifyProfile } from "../Services/spotifyService";
-// import PlaylistCard from './PlaylistCard';
-// import SpotifyPlayer from './SpotifyPlayer';
+import { getUserPlaylists ,getSpotifyProfile,getLikedSongs } from "../Services/spotifyService";
+import PlaylistCard from "../component/PlaylistCard";
 import "../SpotifyProfile.css";
 export default function SpotifyProfile({ token }) {
   const [profile, setProfile] = useState(null);
-  // const [playlists, setPlaylists] = useState([]);
-  // const [likedSongs, setLikedSongs] = useState(null);
+  const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileData] = await Promise.all([getSpotifyProfile()]);
-
+        const [profileData, playlistData, likedData] = await Promise.all([
+          getSpotifyProfile(),
+          getUserPlaylists(),
+          getLikedSongs()
+        ]);
         setProfile(profileData.profile);
+        setPlaylists(playlistData,likedData);
       } catch (error) {
         console.error("Error fetching Spotify data:", error);
       } finally {
@@ -24,13 +26,13 @@ export default function SpotifyProfile({ token }) {
 
     fetchData();
   }, [token]);
-
   if (loading) {
     return <div className="loading-spotify">Loading your Spotify data...</div>;
   }
 
   return (
     <div className="spotify-profile-container">
+      {/* profile Card  */}
       <div className="profile-header flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 px-4 sm:px-6 py-6 sm:py-8 bg-gradient-to-b from-[#535353] via-[#121212] to-black rounded-lg shadow-md w-full">
         {/* Profile Image - Center on mobile, left on larger screens */}
         <div className="profile-image flex-shrink-0">
@@ -93,46 +95,20 @@ export default function SpotifyProfile({ token }) {
           </div>
         </div>
       </div>
-      {/* <SpotifyPlayer token={token} /> */}
-      {/* 
-      <div className="playlists-section">
-        <h3>Your Playlists</h3>
-        <div className="playlists-grid">
-          {playlists.map(playlist => (
-            <PlaylistCard 
-              key={playlist.id} 
-              playlist={playlist} 
-              onPlay={() => playTrack(playlist.uri)} 
+
+      {/* Playlist Section */}
+      <div className="playlist-section mt-8">
+        <h3 className="text-white text-xl font-bold mb-4">Your Playlists</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {playlists.map((playlist) => (
+            <PlaylistCard
+              key={playlist.id}
+              playlist={playlist}
+              onPlay={() => console.log("Play", playlist.name)}
             />
           ))}
         </div>
-      </div> */}
-
-      {/* {likedSongs && likedSongs.length > 0 && (
-        <div className="liked-songs-section">
-          <h3>Your Liked Songs</h3>
-          <div className="songs-list">
-            {likedSongs.map((song, index) => (
-              <div 
-                key={index} 
-                className="song-item"
-                onClick={() => playTrack(song.uri)}
-              >
-                <div className="song-info">
-                  <img 
-                    src={song.album.image || 'https://via.placeholder.com/50'} 
-                    alt={song.name} 
-                  />
-                  <div>
-                    <p className="song-name">{song.name}</p>
-                    <p className="song-artists">{song.artists.join(', ')}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )} */}
+      </div>
     </div>
   );
 }

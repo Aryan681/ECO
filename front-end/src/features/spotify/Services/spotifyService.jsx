@@ -62,16 +62,16 @@ export const getSpotifyProfile = async () => {
     throw error;
   }
 };
-
 export const getUserPlaylists = async () => {
   try {
     const response = await spotifyApi.get('/playlists');
-    return response.data;
+    return response.data.playlists; 
   } catch (error) {
     console.error('Error getting user playlists:', error);
     throw error;
   }
 };
+
 
 export const getLikedSongs = async (limit = 50, offset = 0) => {
   try {

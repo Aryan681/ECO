@@ -2,6 +2,7 @@ const axios = require('axios');
 const qs = require('qs');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { callSpotifyApi } = require('../utils/spotifyApiClient'); // use your correct path
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
@@ -36,7 +37,6 @@ const SCOPES = [
 ].join(' ');
 
 
-// Generate the Spotify authorization URL
 exports.getAuthorizationUrl = (userId) => {
   const params = new URLSearchParams({
     response_type: 'code',
@@ -49,7 +49,6 @@ exports.getAuthorizationUrl = (userId) => {
   return `https://accounts.spotify.com/authorize?${params.toString()}`;
 };
 
-// Exchange the auth code for access & refresh tokens, then upsert user data
 exports.exchangeTokenAndSaveUser = async (code, userId) => {
   const tokenRes = await axios.post(
     'https://accounts.spotify.com/api/token',
@@ -96,197 +95,97 @@ exports.exchangeTokenAndSaveUser = async (code, userId) => {
   return data.id;
 };
 
-// Play track (accepts optional track URI)
-exports.playTrack = async (userId, trackUri) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
 
-  await axios.put('https://api.spotify.com/v1/me/player/play', 
-    trackUri ? { uris: [trackUri] } : {}, 
-    {
-      headers: {
-        Authorization: `Bearer ${account.accessToken}`
-      }
-    }
-  );
-};
+// All API methods use callSpotifyApi now:
 
-// Pause current playback
-exports.pauseTrack = async (userId) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  await axios.put('https://api.spotify.com/v1/me/player/pause', {}, {
-    headers: {
-      Authorization: `Bearer ${account.accessToken}`
-    }
-  });
-};
-
-// Resume playback (alias of playTrack without URI)
-exports.resumeTrack = async (userId) => {
-  return exports.playTrack(userId);
-};
-
-// Fetch the connected Spotify profile using stored access token
-exports.fetchSpotifyProfile = async (userId) => {
-  const account = await prisma.spotifyAccount.findUnique({
-    where: { userId }
-  });
-
-  if (!account) throw new Error("Spotify not connected");
-
-  const res = await axios.get('https://api.spotify.com/v1/me', {
-    headers: {
-      Authorization: `Bearer ${account.accessToken}`
-    }
-  });
-
-  return res.data;
-};
-
-exports.fetchUserPlaylists = async (userId) => {
-  const account = await prisma.spotifyAccount.findUnique({
-    where: { userId }
-  });
-
-  if (!account) throw new Error("Spotify not connected");
-
-  const res = await axios.get('https://api.spotify.com/v1/me/playlists', {
-    headers: {
-      Authorization: `Bearer ${account.accessToken}`
-    }
-  });
-
-  return res.data; 
-};
-
-exports.fetchLikedSongs = async (userId) => {
-  const account = await prisma.spotifyAccount.findUnique({
-    where: { userId }
-  });
-
-  if (!account) throw new Error("Spotify not connected");
-
-  const res = await axios.get('https://api.spotify.com/v1/me/tracks', {
-    headers: {
-      Authorization: `Bearer ${account.accessToken}`
-    }
-  });
-
-  return res.data; 
-}
-
-
-// Skip to next track
-exports.nextTrack = async (userId) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  await axios.post(
-    'https://api.spotify.com/v1/me/player/next',
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${account.accessToken}`,
-      },
-    }
-  );
-};
-
-// Skip to previous track
-exports.previousTrack = async (userId) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  await axios.post(
-    'https://api.spotify.com/v1/me/player/previous',
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${account.accessToken}`,
-      },
-    }
-  );
-};
-
-// Add to Liked Songs
-exports.likeTrack = async (userId, trackId) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  await axios.put(`https://api.spotify.com/v1/me/tracks`, 
-    { ids: [trackId] }, 
-    {
-      headers: {
-        Authorization: `Bearer ${account.accessToken}`
-      }
-    }
-  );
-};
-
-// Add to Playlist
-exports.addTrackToPlaylist = async (userId, playlistId, trackUri) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  await axios.post(
-    `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-    { uris: [trackUri] },
-    {
-      headers: {
-        Authorization: `Bearer ${account.accessToken}`
-      }
-    }
-  );
-};
-
-
-// Unlike a Track
-exports.unlikeTrack = async (userId, trackId) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  await axios.delete(`https://api.spotify.com/v1/me/tracks`, {
-    headers: {
-      Authorization: `Bearer ${account.accessToken}`
-    },
-    data: {
-      ids: [trackId]
-    }
-  });
-};
-
-// Remove Track from Playlist
-exports.removeTrackFromPlaylist = async (userId, playlistId, trackUri) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  await axios.request({
-    method: 'delete',
-    url: `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-    headers: {
-      Authorization: `Bearer ${account.accessToken}`
-    },
-    data: {
-      tracks: [{ uri: trackUri }]
-    }
-  });
-};
-
-
-exports.isTrackLiked = async (userId, trackId) => {
-  const account = await prisma.spotifyAccount.findUnique({ where: { userId } });
-  if (!account) throw new Error("Spotify not connected");
-
-  const res = await axios.get(
-    `https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${account.accessToken}`
-      }
-    }
+exports.playTrack = async (userId, trackUri) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.put('https://api.spotify.com/v1/me/player/play', trackUri ? { uris: [trackUri] } : {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
   );
 
-  return res.data[0]; // true or false
-};
+exports.pauseTrack = async (userId) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.put('https://api.spotify.com/v1/me/player/pause', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  );
+
+exports.resumeTrack = async (userId) => exports.playTrack(userId);
+
+exports.fetchSpotifyProfile = async (userId) =>
+  await callSpotifyApi(userId, async (token) => {
+    const res = await axios.get('https://api.spotify.com/v1/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+  });
+
+exports.fetchUserPlaylists = async (userId) =>
+  await callSpotifyApi(userId, async (token) => {
+    const res = await axios.get('https://api.spotify.com/v1/me/playlists', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+  });
+
+exports.fetchLikedSongs = async (userId) =>
+  await callSpotifyApi(userId, async (token) => {
+    const res = await axios.get('https://api.spotify.com/v1/me/tracks', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+  });
+
+exports.nextTrack = async (userId) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.post('https://api.spotify.com/v1/me/player/next', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  );
+
+exports.previousTrack = async (userId) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.post('https://api.spotify.com/v1/me/player/previous', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  );
+
+exports.likeTrack = async (userId, trackId) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.put('https://api.spotify.com/v1/me/tracks', { ids: [trackId] }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  );
+
+exports.unlikeTrack = async (userId, trackId) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.delete('https://api.spotify.com/v1/me/tracks', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { ids: [trackId] }
+    })
+  );
+
+exports.addTrackToPlaylist = async (userId, playlistId, trackUri) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.post(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, { uris: [trackUri] }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  );
+
+exports.removeTrackFromPlaylist = async (userId, playlistId, trackUri) =>
+  await callSpotifyApi(userId, async (token) =>
+    axios.delete(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { tracks: [{ uri: trackUri }] }
+    })
+  );
+
+exports.isTrackLiked = async (userId, trackId) =>
+  await callSpotifyApi(userId, async (token) => {
+    const res = await axios.get(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data[0]; // true or false
+  });

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { getSpotifyProfile } from '../../features/spotify/Services/spotifyService';
-import ConnectSpotify from '../../features/spotify/component/ConnectSpotify';
-import SpotifyProfile from '../../features/spotify/component/SpotifyProfile';
-import '../../features/spotify/Spotify.css'; // We'll create this next
+import { useState, useEffect } from "react";
+import { getSpotifyProfile } from "../../features/spotify/Services/spotifyService";
+import ConnectSpotify from "../../features/spotify/component/ConnectSpotify";
+import SpotifyProfile from "../../features/spotify/component/SpotifyProfile";
+import "../../features/spotify/Spotify.css"; // We'll create this next
 
 function SpotifyPage() {
   const [isConnected, setIsConnected] = useState(false);
@@ -10,13 +10,22 @@ function SpotifyPage() {
 
   useEffect(() => {
     const checkConnection = async () => {
+      const wasConnected = localStorage.getItem("spotify_connected");
+      if (wasConnected === "true") {
+        setIsConnected(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         await getSpotifyProfile();
         setIsConnected(true);
+        localStorage.setItem("spotify_connected", "true");
       } catch (error) {
-        console.log('Not connected to Spotify:', error);
+        console.log("Not connected to Spotify:", error);
         setIsConnected(false);
+        localStorage.setItem("spotify_connected", "false");
       } finally {
         setLoading(false);
       }

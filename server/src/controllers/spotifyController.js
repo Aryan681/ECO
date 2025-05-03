@@ -1,4 +1,5 @@
 const spotifyService = require('../services/spotifyService');
+const { callSpotifyApi } = require('../utils/spotifyApiClient');
 
 exports.initiateSpotifyLogin = (req, res) => {
   const url = spotifyService.getAuthorizationUrl(req.user.id);
@@ -15,7 +16,7 @@ exports.handleSpotifyCallback = async (req, res) => {
     }
 
     const spotifyId = await spotifyService.exchangeTokenAndSaveUser(code, userId);
-    return res.redirect(`http://localhost:5173/dashboard/spotify`);
+    return res.redirect('http://localhost:5173/dashboard/spotify');
   } catch (error) {
     console.error("❌ Spotify Callback Error:", error.response?.data || error.message || error);
     res.status(500).json({ success: false, message: 'Failed to connect Spotify' });
@@ -62,7 +63,6 @@ exports.resumeTrack = async (req, res) => {
   }
 };
 
-
 exports.getUserPlaylists = async (req, res) => {
   try {
     const raw = await spotifyService.fetchUserPlaylists(req.user.id);
@@ -75,13 +75,12 @@ exports.getUserPlaylists = async (req, res) => {
       owner: p.owner?.display_name || 'Unknown'
     }));
 
-    res.status(200).json({ success: true, ...playlists });
+    res.status(200).json({ success: true, playlists });
   } catch (error) {
     console.error("❌ Get Playlists Error:", error.response?.data || error.message || error);
     res.status(500).json({ success: false, message: 'Failed to fetch playlists' });
   }
 };
-
 
 exports.getLikedSongs = async (req, res) => {
   try {
@@ -102,13 +101,12 @@ exports.getLikedSongs = async (req, res) => {
       added_at: item.added_at
     }));
 
-    res.status(200).json({ success: true, tracks: cleanedTracks });
+    res.status(200).json({ success: true, cleanedTracks });
   } catch (error) {
     console.error("❌ Liked Songs Error:", error.response?.data || error.message || error);
     res.status(500).json({ success: false, message: 'Failed to fetch liked songs' });
   }
 };
-
 
 exports.skipTrack = async (req, res) => {
   const action = req.query.action;
@@ -127,12 +125,11 @@ exports.skipTrack = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(`❌ Skip Track Error:`, error.response?.data || error.message || error);
+    console.error("❌ Skip Track Error:", error.response?.data || error.message || error);
     res.status(500).json({ success: false, message: 'Failed to skip track' });
   }
 };
 
-// Like a Track
 exports.likeTrack = async (req, res) => {
   try {
     const { trackId } = req.body;
@@ -148,7 +145,6 @@ exports.likeTrack = async (req, res) => {
   }
 };
 
-// Add Track to Playlist
 exports.addTrackToPlaylist = async (req, res) => {
   try {
     const { playlistId, trackUri } = req.body;
@@ -164,8 +160,6 @@ exports.addTrackToPlaylist = async (req, res) => {
   }
 };
 
-
-// Unlike a Track
 exports.unlikeTrack = async (req, res) => {
   try {
     const { trackId } = req.body;
@@ -181,7 +175,6 @@ exports.unlikeTrack = async (req, res) => {
   }
 };
 
-// Remove Track from Playlist
 exports.removeTrackFromPlaylist = async (req, res) => {
   try {
     const { playlistId, trackUri } = req.body;
@@ -196,7 +189,6 @@ exports.removeTrackFromPlaylist = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to remove track from playlist' });
   }
 };
-
 
 exports.isTrackLiked = async (req, res) => {
   try {
