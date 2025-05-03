@@ -123,7 +123,7 @@ passport.use(
           process.env.JWT_SECRET || "your_jwt_secret_here",
           { expiresIn: "1h" }
         );
-
+ 
         return done(null, { 
           user: {
             id: user.id,

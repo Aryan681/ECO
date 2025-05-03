@@ -1,16 +1,15 @@
 // src/features/spotify/components/SpotifyLoginButton.jsx
 import { useState } from 'react';
 import { initiateSpotifyLogin } from '../Services/spotifyService';
-
+import '../spotify.css'
 function SpotifyLoginButton() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const authUrl = await initiateSpotifyLogin();
-      // Redirect to Spotify auth page
-      window.location.href = authUrl;
+       await initiateSpotifyLogin();
+   
     } catch (error) {
       console.error('Login failed:', error);
       alert('Failed to initiate Spotify login');

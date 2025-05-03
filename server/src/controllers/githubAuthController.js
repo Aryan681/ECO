@@ -36,26 +36,54 @@ const githubCallback = (req, res, next) => {
       const { accessToken, refreshToken } = await generateAuthTokens(user);
 
       // Successful response
-      return res.json({
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.profile?.firstName || user.profile?.username,
-          avatar: user.profile?.profileImage,
-          authProvider: 'github'
-        },
-        tokens: {
-          accessToken,
-          refreshToken
-        },
-        githubAccessToken: githubAccessToken // Include the fresh token
-      });
-    } catch (error) {
-      console.error('Callback Processing Error:', error);
-      return next(error);
-    }
-  })(req, res, next);
+   // Get the origin from the request or use default
+   const frontendOrigin = req.get('origin') || process.env.FRONTEND_URL || 'http://localhost:5173';
+
+   return res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>GitHub Auth Success</title>
+      <script>
+        const response = ${JSON.stringify({
+          success: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.profile?.firstName || user.profile?.username,
+            avatar: user.profile?.profileImage,
+            authProvider: 'github'
+          },
+          tokens: {
+            accessToken,
+            refreshToken
+          },
+          githubAccessToken
+        })};
+        
+        // Try to send to opener with specific origin first
+        try {
+          window.opener.postMessage(response, '${frontendOrigin}');
+        } catch (err) {
+          console.error('Specific origin post failed:', err);
+          // Fallback to wildcard if needed
+          window.opener.postMessage(response, '*');
+        }
+        window.close();
+      </script>
+    </head>
+    <body>
+      <p>Authentication successful. Closing window...</p>
+    </body>
+    </html>
+  `);
+   
+   
+ } catch (error) {
+   console.error('Callback Processing Error:', error);
+   return next(error);
+ }
+})(req, res, next);
 };
 
 module.exports = { githubAuth, githubCallback };

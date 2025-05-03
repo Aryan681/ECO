@@ -56,36 +56,79 @@ const handleSubmit = async (e) => {
     setLoading(false);
   }
 };
+const handleGitHubAuth = async () => {
+  setLoading(true);
+  setError('');
+  
+  try {
+    // Open popup with same origin context
+    const authWindow = window.open(
+      'http://localhost:3000/api/github/login',
+      'githubAuth', // Use a named target
+      'width=500,height=600,left=100,top=100'
+    );
 
-  const handleGitHubAuth = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const authWindow = window.open(
-        'http://localhost:3000/api/auth/github', 
-        '_blank',
-        'width=500,height=600'
-      );
-      
-      const checkAuth = setInterval(() => {
-        if (authWindow.closed) {
-          clearInterval(checkAuth);
-          const token = localStorage.getItem('token');
-          if (token) {
-            navigate('/');
-          } else {
-            setError('GitHub authentication failed');
-          }
-        }
-      }, 500);
-    } catch (err) {
-      console.error('GitHub auth error:', err);
-      setError('GitHub authentication failed');
-    } finally {
-      setLoading(false);
+    if (!authWindow) {
+      throw new Error('Popup blocked. Please allow popups for this site.');
     }
-  };
+
+    // Create message handler before opening window
+    const messageHandler = (event) => {
+      // Verify origin - allow localhost and your frontend URL
+      const allowedOrigins = [
+        'http://localhost:5173',
+        process.env.REACT_APP_FRONTEND_URL
+      ].filter(Boolean);
+
+      if (!allowedOrigins.some(origin => event.origin.includes(origin))) {
+        console.warn('Message from unauthorized origin:', event.origin);
+        return;
+      }
+
+      if (event.data?.success) {
+        // Store all authentication data
+        const { user, tokens, githubAccessToken } = event.data;
+        
+        localStorage.setItem('token', tokens.accessToken);
+        localStorage.setItem('refreshToken', tokens.refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        if (githubAccessToken) {
+          localStorage.setItem('githubAccessToken', githubAccessToken);
+        }
+        
+        navigate('/');
+      } else {
+        setError(event.data?.message || 'GitHub authentication failed');
+      }
+      
+      // Clean up
+      window.removeEventListener('message', messageHandler);
+    };
+
+    // Add listener immediately
+    window.addEventListener('message', messageHandler);
+
+    // Check if window closed without completing auth
+    const checkWindow = setInterval(() => {
+      if (authWindow.closed) {
+        clearInterval(checkWindow);
+        window.removeEventListener('message', messageHandler);
+        
+        // Verify if auth actually completed
+        if (!localStorage.getItem('token')) {
+          setError('Authentication window closed before completion');
+        }
+      }
+    }, 500);
+
+  } catch (err) {
+    console.error('GitHub auth error:', err);
+    setError(err.message || 'GitHub authentication failed');
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   // Animation setup

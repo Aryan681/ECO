@@ -1,37 +1,121 @@
-import useSpotifyPlayer from '../hooks/useSpotifyPlayer';
-import SpotifyControls from './SpotifyControls';
-import TrackSelector from './TrackSelector';
-import NowPlaying from './NowPlaing';
+import { useState, useEffect } from 'react';
 
-function SpotifyPlayer({ token }) {
-  const { deviceId, currentTrack, isPlaying, error } = useSpotifyPlayer(token);
+export default function SpotifyPlayer({ token }) {
+  const [player, setPlayer] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState(null);
+// Add this to your SpotifyPlayer component
+const transferPlayback = async () => {
+  if (!deviceId) return;
+  
+  await fetch(`https://api.spotify.com/v1/me/player`, {
+    method: 'PUT',
+    body: JSON.stringify({ device_ids: [deviceId], play: false }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+};
 
-  if (error) {
-    return (
-      <div className="spotify-error">
-        <h3>Spotify Player Error</h3>
-        <p>{error}</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </div>
-    );
-  }
+// Call this when device becomes ready
+player.addListener('ready', ({ device_id }) => {
+  setDeviceId(device_id);
+  transferPlayback();
+});
+  useEffect(() => {
+    if (!token) return;
 
-  if (!token) {
-    return (
-      <div className="spotify-login-prompt">
-        <h3>Connect to Spotify</h3>
-        <SpotifyLoginButton />
-      </div>
-    );
-  }
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const player = new window.Spotify.Player({
+        name: 'Your App Name',
+        getOAuthToken: cb => { cb(token); },
+        volume: 0.5
+      });
+
+      setPlayer(player);
+
+      player.addListener('ready', ({ device_id }) => {
+        console.log('Ready with Device ID', device_id);
+        setDeviceId(device_id);
+      });
+
+      player.addListener('player_state_changed', state => {
+        if (!state) return;
+        setIsPlaying(!state.paused);
+        setCurrentTrack(state.track_window.current_track);
+      });
+
+      player.connect().then(success => {
+        if (success) {
+          console.log('The Web Playback SDK successfully connected!');
+        }
+      });
+
+      return () => {
+        player.disconnect();
+      };
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [token]);
+
+  const playTrack = (trackUri) => {
+    if (!deviceId) return;
+    
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ uris: [trackUri] }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  };
+
+  const togglePlay = () => {
+    if (!deviceId) return;
+    
+    fetch(`https://api.spotify.com/v1/me/player/${isPlaying ? 'pause' : 'play'}?device_id=${deviceId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  };
 
   return (
     <div className="spotify-player-container">
-      <NowPlaying track={currentTrack} isPlaying={isPlaying} />
-      <SpotifyControls deviceId={deviceId} isPlaying={isPlaying} />
-      {deviceId && <TrackSelector deviceId={deviceId} />}
+      {currentTrack && (
+        <div className="now-playing">
+          <img 
+            src={currentTrack.album.images[0].url} 
+            alt={currentTrack.name} 
+            className="now-playing-cover"
+          />
+          <div className="now-playing-info">
+            <div className="now-playing-name">{currentTrack.name}</div>
+            <div className="now-playing-artist">
+              {currentTrack.artists.map(artist => artist.name).join(', ')}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="player-controls">
+        <button onClick={togglePlay} className="play-button">
+          {isPlaying ? '❚❚' : '▶'}
+        </button>
+      </div>
     </div>
   );
 }
-
-export default SpotifyPlayer;

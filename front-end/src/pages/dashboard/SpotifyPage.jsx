@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import SpotifyPlayer from '../../features/spotify/component/SpotifyPlayer';
 import { getSpotifyProfile } from '../../features/spotify/Services/spotifyService';
+import ConnectSpotify from '../../features/spotify/component/ConnectSpotify';
+import SpotifyProfile from '../../features/spotify/component/SpotifyProfile';
+import '../../features/spotify/Spotify.css'; // We'll create this next
 
 function SpotifyPage() {
-  const [token, setToken] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -11,8 +12,7 @@ function SpotifyPage() {
     const checkConnection = async () => {
       try {
         setLoading(true);
-        const profile = await getSpotifyProfile();
-        setToken(profile.accessToken);
+        await getSpotifyProfile();
         setIsConnected(true);
       } catch (error) {
         console.log('Not connected to Spotify:', error);
@@ -26,13 +26,21 @@ function SpotifyPage() {
   }, []);
 
   if (loading) {
-    return <div className="loading-spotify">Loading Spotify integration...</div>;
+    return (
+      <div className="spotify-loading-screen">
+        <div className="spotify-loading-spinner"></div>
+        <p>Loading Spotify integration...</p>
+      </div>
+    );
   }
 
   return (
     <div className="spotify-page">
-      <h2>Spotify Integration</h2>
-      <SpotifyPlayer token={token} />
+      {isConnected ? (
+        <SpotifyProfile />
+      ) : (
+        <ConnectSpotify onConnect={() => setIsConnected(true)} />
+      )}
     </div>
   );
 }

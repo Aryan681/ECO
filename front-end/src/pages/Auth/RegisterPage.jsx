@@ -71,7 +71,7 @@ const handleSubmit = async (e) => {
     
     try {
       const authWindow = window.open(
-        'http://localhost:3000/api/auth/github', 
+        'http://localhost:3000/api/github/login', 
         '_blank',
         'width=500,height=600'
       );

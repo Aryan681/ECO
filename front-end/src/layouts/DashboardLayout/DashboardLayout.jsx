@@ -18,6 +18,7 @@ import {
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { motion } from "framer-motion";
+
 const features = [
   {
     id: "home",
@@ -62,6 +63,7 @@ const features = [
     color: "text-amber-400",
   },
 ];
+
 const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -72,12 +74,9 @@ const DashboardLayout = () => {
   const typeRef = useRef();
   const generatedId = useId();
 
-  
-  // Handle Logout
   const handleLogout = async () => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
-      
       await axios.post(
         "http://localhost:3000/api/auth/logout",
         { refreshToken },
@@ -90,7 +89,6 @@ const DashboardLayout = () => {
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
-      // Clear user data regardless of API success
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
@@ -98,7 +96,6 @@ const DashboardLayout = () => {
     }
   };
 
-  // Initialize particles
   useEffect(() => {
     initParticlesEngine(async (engine) => {
       await loadSlim(engine);
@@ -107,7 +104,6 @@ const DashboardLayout = () => {
     });
   }, []);
 
-  // Set active feature based on route
   useEffect(() => {
     if (sidebarRef.current) {
       gsap.from(sidebarRef.current, {
@@ -129,9 +125,6 @@ const DashboardLayout = () => {
     }
   }, [isSidebarCollapsed]);
 
-  // GSAP Animations
-
-  // Typewriter effect
   useEffect(() => {
     if (isSidebarCollapsed || !typeRef.current) return;
 
@@ -168,8 +161,6 @@ const DashboardLayout = () => {
       timers.forEach(clearTimeout);
     };
   }, [isSidebarCollapsed]);
-
-
 
   const handleFeatureClick = (featureId) => {
     setActiveFeature(featureId);
@@ -235,24 +226,33 @@ const DashboardLayout = () => {
           }}
         />
       )}
-      <div className="relative z-10 h-screen w-full flex items-center justify-center p-6">
-        <div className="text-center space-y-6">
+      <div className="relative z-10 h-full w-full flex items-center justify-center p-6">
+        <div className="text-center space-y-6 max-w-4xl mx-auto px-4">
           <h2 className="text-4xl font-semibold text-gray-100 mb-4 tracking-wide">
             Welcome to Your Dashboard
           </h2>
+          <p className="text-gray-400 text-lg">
+            Select a feature from the sidebar to get started
+          </p>
         </div>
       </div>
     </motion.div>
   );
 
+  // And the usage remains the same:
+  <div className="relative z-10 h-full w-full">
+    {activeFeature === "dashboard" ? <DashboardContent /> : <Outlet />}
+  </div>;
   return (
     <div className="flex h-screen bg-gray-950 text-gray-100 overflow-hidden">
-      {/* Sidebar Navigation with ref */}
+      {/* Sidebar Navigation */}
       <aside
         ref={sidebarRef}
-        className={`${
-          isSidebarCollapsed ? "w-20" : "w-64"
-        } bg-gray-900/80 border-r border-gray-800 flex flex-col p-4 backdrop-blur-sm`}
+        className={`
+          ${isSidebarCollapsed ? "w-20" : "w-64"}
+          bg-gray-900/80 border-r border-gray-800 flex flex-col p-4 backdrop-blur-sm
+          fixed h-full z-20
+        `}
       >
         <div
           className={`mb-8 p-4 ${
@@ -260,18 +260,31 @@ const DashboardLayout = () => {
           }`}
         >
           {isSidebarCollapsed ? (
-            <h1 className="text-2xl font-mono font-bold">
-              <span className="text-cyan-400">&lt;</span>
-              <span className="text-gray-100">Eco</span>
-              <span className="text-cyan-400">&gt;</span>
-            </h1>
-          ) : (
-            <>
-              <h1 className="text-2xl font-mono font-bold">
+            <button
+              onClick={toggleSidebar}
+              className="flex items-center space-x-2 group focus:outline-none"
+            >
+              <h1 className="text-2xl font-mono font-bold group-hover:text-cyan-400 transition-colors duration-200">
                 <span className="text-cyan-400">&lt;</span>
                 <span className="text-gray-100">Eco</span>
                 <span className="text-cyan-400">&gt;</span>
               </h1>
+             
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={toggleSidebar}
+                className="flex items-center space-x-2 group focus:outline-none"
+              >
+                <h1 className="text-2xl font-mono font-bold group-hover:text-cyan-400 transition-colors duration-200">
+                  <span className="text-cyan-400">&lt;</span>
+                  <span className="text-gray-100">Eco</span>
+                  <span className="text-cyan-400">&gt;</span>
+                </h1>
+                
+              </button>
+
               <p className="text-gray-400 text-sm font-mono mt-1">
                 dev<span className="text-gray-600">.</span>
                 <span className="text-amber-400" ref={typeRef}></span>
@@ -280,19 +293,8 @@ const DashboardLayout = () => {
             </>
           )}
         </div>
-
         {/* Collapse/Expand Button */}
-        <button
-          onClick={toggleSidebar}
-          className="absolute -right-3 top-6 bg-gray-800 hover:bg-gray-700 rounded-full p-1 border border-gray-600 shadow-md transition-all duration-300 z-10"
-        >
-          {isSidebarCollapsed ? (
-            <FiChevronRight className="text-gray-300" />
-          ) : (
-            <FiChevronLeft className="text-gray-300" />
-          )}
-        </button>
-
+        
         <nav className="flex-1 overflow-hidden">
           <ul className="space-y-2">
             {features.map((feature) => (
@@ -326,8 +328,8 @@ const DashboardLayout = () => {
             ))}
           </ul>
         </nav>
-
-        <div className="mt-auto p-4 border-t border-gray-800">
+        {/* lower icons */}
+        <div className="mt-auto h-30 p-2 border-t space-y-2 border-gray-800">
           <button
             className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-800/30 ${
               isSidebarCollapsed ? "justify-center" : ""
@@ -352,19 +354,26 @@ const DashboardLayout = () => {
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <main
-        className={`flex-1 overflow-y-auto  ${
-          isSidebarCollapsed ? "ml-1" : "ml-1"
-        }`}
+        className={`
+          flex-1 overflow-y-auto transition-all duration-300
+          ${isSidebarCollapsed ? "ml-20" : "ml-61"}
+          h-full relative
+        `}
       >
-        <div className="relative z-10 h-screen w-full">
+        <div className="relative z-10 h-full w-full">
           {activeFeature === "dashboard" ? <DashboardContent /> : <Outlet />}
         </div>
 
+        {/* Footer */}
         <div
-          className={`fixed bottom-0 ${
-            isSidebarCollapsed ? "left-20" : "left-64"
-          } right-0 h-12 bg-gray-900/80 border-t border-gray-800 overflow-hidden transition-all duration-300 ease-in-out`}
+          className={`
+            fixed bottom-0 h-12 bg-gray-900/80 border-t border-gray-800
+            transition-all duration-300 ease-in-out
+            ${isSidebarCollapsed ? "left-20" : "left-61"}
+            right-0
+          `}
         >
           <div className="absolute inset-0 flex items-center font-mono text-xs text-gray-400 justify-center">
             <p>Echo Dashboard | Version 1.0</p>

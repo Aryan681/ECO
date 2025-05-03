@@ -2,7 +2,7 @@ const spotifyService = require('../services/spotifyService');
 
 exports.initiateSpotifyLogin = (req, res) => {
   const url = spotifyService.getAuthorizationUrl(req.user.id);
-  return res.redirect(url);
+  return res.json({ url });
 };
 
 exports.handleSpotifyCallback = async (req, res) => {
@@ -15,12 +15,7 @@ exports.handleSpotifyCallback = async (req, res) => {
     }
 
     const spotifyId = await spotifyService.exchangeTokenAndSaveUser(code, userId);
-    return res.status(200).json({
-      success: true,
-      message: 'Spotify account connected successfully',
-      userId,
-      spotifyId
-    });
+    return res.redirect(`http://localhost:5173/dashboard/spotify`);
   } catch (error) {
     console.error("❌ Spotify Callback Error:", error.response?.data || error.message || error);
     res.status(500).json({ success: false, message: 'Failed to connect Spotify' });

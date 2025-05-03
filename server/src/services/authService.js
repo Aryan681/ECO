@@ -87,7 +87,7 @@ const generateAuthTokens = async (user) => {
   const accessToken = jwt.sign(
     { userId: user.id, email: user.email },
     process.env.JWT_ACCESS_SECRET || 'default_access_secret',
-    { expiresIn: '15m' }
+    { expiresIn: '1d' }
   );
 
   const refreshToken = jwt.sign(

@@ -1,23 +1,25 @@
 import axios from 'axios';
-
 const API_BASE = 'http://localhost:3000/api/spotify';
 
 // Create axios instance with base configuration
 const spotifyApi = axios.create({
   baseURL: API_BASE,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
-// Request interceptor to add auth token
-spotifyApi.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
+// Add Authorization header dynamically for each request
+spotifyApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token'); // Get the token from localStorage
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers['Authorization'] = `Bearer ${token}`; // Add the token to Authorization header
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
 
 // Response interceptor to handle errors
 spotifyApi.interceptors.response.use(
@@ -27,6 +29,7 @@ spotifyApi.interceptors.response.use(
       // Handle token expiration or invalid token
       localStorage.removeItem('token');
       window.location.href = '/auth/login';
+      console.log(error)
     }
     return Promise.reject(error);
   }
@@ -34,11 +37,19 @@ spotifyApi.interceptors.response.use(
 
 export const initiateSpotifyLogin = async () => {
   try {
+    // Send GET request to backend API using the spotifyApi instance
     const response = await spotifyApi.get('/login');
-    return response.data.url;
+    
+    if (response.data.url) {
+      console.log('Redirecting to Spotify login URL:', response.data.url);
+      window.location.href = response.data.url; // Redirect to the Spotify login URL
+    } else {
+      console.error('No URL returned from backend.');
+      alert('Failed to initiate Spotify login.');
+    }
   } catch (error) {
     console.error('Error initiating Spotify login:', error);
-    throw error;
+    alert('Failed to initiate Spotify login.');
   }
 };
 

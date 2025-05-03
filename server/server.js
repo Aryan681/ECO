@@ -35,9 +35,11 @@ app.use(pinoHttp({ logger }));
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: "http://localhost:5173", // your frontend URL
-  credentials: true               // allow cookies, auth headers, etc.
-}));
+  origin: '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
