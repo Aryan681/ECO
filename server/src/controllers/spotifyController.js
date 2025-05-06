@@ -1,5 +1,5 @@
 const spotifyService = require('../services/spotifyService');
-const { callSpotifyApi } = require('../utils/spotifyApiClient');
+
 
 exports.initiateSpotifyLogin = (req, res) => {
   const url = spotifyService.getAuthorizationUrl(req.user.id);
@@ -32,6 +32,21 @@ exports.getSpotifyProfile = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch profile' });
   }
 };
+
+exports.getPlaylistTracks = async (req, res) => {
+  try {
+    const { playlistId } = req.params;
+    const tracks = await spotifyService.getPlaylistTracks(req.user.id, playlistId);
+    res.json({ success: true, tracks });
+  } catch (error) {
+    console.error("❌ Get Playlist Tracks Error:", error.response?.data || error.message || error);
+    res.status(error.message?.includes('expired') ? 401 : 500).json({
+      success: false,
+      message: 'Failed to fetch playlist tracks'
+    });
+  }
+};
+
 
 exports.playTrack = async (req, res) => {
   try {
@@ -100,7 +115,7 @@ exports.getLikedSongs = async (req, res) => {
       },
       added_at: item.added_at
     }));
-
+ 
     res.status(200).json({ success: true, cleanedTracks });
   } catch (error) {
     console.error("❌ Liked Songs Error:", error.response?.data || error.message || error);

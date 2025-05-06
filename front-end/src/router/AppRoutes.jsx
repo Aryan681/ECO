@@ -7,7 +7,7 @@ import LoginPage from "../pages/Auth/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
 import DashboardLayout from "../layouts/DashboardLayout/DashboardLayout";
 import SpotifyPage from "../pages/dashboard/SpotifyPage";
-
+import PlaylistDetails from "../pages/dashboard/PlaylistDetails";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -23,6 +23,7 @@ const AppRoutes = () => {
 
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route path="spotify" element={<SpotifyPage />} />
+        <Route path="playlist/:playlistId" element={<PlaylistDetails />} />
       </Route>
     </Routes>
   );

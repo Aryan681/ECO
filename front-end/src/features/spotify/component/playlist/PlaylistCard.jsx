@@ -1,6 +1,15 @@
+import { useNavigate } from "react-router-dom";
+
 export default function PlaylistCard({ playlist, onPlay }) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/dashboard/playlist/${playlist.id}`);
+
+  };
+
     return (
-      <div className="playlist-card" onClick={onPlay}>
+      <div className="playlist-card"  onClick={handleClick}>
         <div className="playlist-image">
           {playlist.coverImage ? (
             <img src={playlist.coverImage} alt={playlist.name} />

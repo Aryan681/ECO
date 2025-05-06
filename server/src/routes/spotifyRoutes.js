@@ -24,5 +24,10 @@ router.post('/playlist/add', authenticate, requireSpotifyConnection,spotifyContr
 router.post('/unlike', authenticate, requireSpotifyConnection,spotifyController.unlikeTrack);
 router.post('/playlist/remove', authenticate, requireSpotifyConnection,spotifyController.removeTrackFromPlaylist);
 
-
+router.get('/playlists/:playlistId/tracks', 
+    authenticate, 
+    requireSpotifyConnection, 
+    spotifyController.getPlaylistTracks
+  );
 module.exports = router;
+ 

@@ -4,7 +4,7 @@ import {
   getSpotifyProfile,
   getLikedSongs,
 } from "../Services/spotifyService";
-import PlaylistCard from "../component/PlaylistCard";
+import PlaylistCard from "../component/playlist/PlaylistCard";
 import "../SpotifyProfile.css";
 
 export default function SpotifyProfile({ token }) {
