@@ -130,13 +130,30 @@ exports.fetchUserPlaylists = async (userId) =>
     return res.data;
   });
 
-exports.fetchLikedSongs = async (userId) =>
-  await callSpotifyApi(userId, async (token) => {
-    const res = await axios.get('https://api.spotify.com/v1/me/tracks', {
-      headers: { Authorization: `Bearer ${token}` }
+  exports.fetchLikedSongs = async (userId) => {
+    return await callSpotifyApi(userId, async (token) => {
+      let allTracks = [];
+      let limit = 50;
+      let offset = 0;
+      let hasNext = true;
+  
+      while (hasNext) {
+        const res = await axios.get('https://api.spotify.com/v1/me/tracks', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { limit, offset }
+        });
+  
+        const data = res.data;
+        allTracks = allTracks.concat(data.items);
+  
+        offset += limit;
+        hasNext = data.next !== null;
+      }
+  
+      return { items: allTracks };
     });
-    return res.data;
-  });
+  };
+  
 
 exports.nextTrack = async (userId) =>
   await callSpotifyApi(userId, async (token) =>

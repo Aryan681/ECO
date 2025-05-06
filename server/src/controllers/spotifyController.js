@@ -87,7 +87,7 @@ exports.getLikedSongs = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
 
-    const data = await spotifyService.fetchLikedSongs(req.user.id, limit, offset);
+    const data = await spotifyService.fetchLikedSongs(req.user.id);
 
     const cleanedTracks = data.items.map(item => ({
       id: item.track.id,
