@@ -1,4 +1,4 @@
-import { likeTrack, unlikeTrack } from '../Services/spotifyService';
+import { likeTrack, unlikeTrack } from '../../Services/spotifyService';
 
 function NowPlaying({ track, isPlaying }) {
   if (!track) return <div className="now-playing">No track playing</div>;

@@ -1,115 +1,77 @@
-// "use client";
-// import React, { useId, useState, useEffect } from "react";
-// import Particles, { initParticlesEngine } from "@tsparticles/react";
-// import { loadSlim } from "@tsparticles/slim";
-// import { motion } from "framer-motion"; // Use framer-motion for animation
+"use client";
+import React, { useState, useEffect } from "react";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
+import { motion } from "framer-motion";
 
-// const Dashboard = (props) => {
-//   const {
-//     id,
-//     className,
-//     background,
-//     minSize,
-//     maxSize,
-//     speed,
-//     particleColor,
-//     particleDensity,
-//   } = props;
+const DashboardHome = () => {
+  const [particlesInit, setParticlesInit] = useState(false);
 
-//   const [init, setInit] = useState(false);
-//   useEffect(() => {
-//     // Initialize particles engine
-//     initParticlesEngine(async (engine) => {
-//       await loadSlim(engine);
-//     }).then(() => {
-//       setInit(true);
-//     });
-//   }, []);
+  useEffect(() => {
+    initParticlesEngine(async (engine) => {
+      await loadSlim(engine);
+    }).then(() => {
+      setParticlesInit(true);
+    });
+  }, []);
 
-//   const generatedId = useId();
+  return (
+    <motion.div
+      className="h-full w-full relative"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {particlesInit && (
+        <Particles
+          id="particles-js"
+          className="absolute inset-0 -z-10"
+          options={{
+            background: { color: { value: "transparent" } },
+            fullScreen: { enable: false, zIndex: -1 },
+            fpsLimit: 120,
+            interactivity: {
+              events: {
+                onClick: { enable: true, mode: "push" },
+                onHover: { enable: true, mode: "repulse" },
+                resize: true,
+              },
+              modes: {
+                push: { quantity: 4 },
+                repulse: { distance: 100, duration: 0.4 },
+              },
+            },
+            particles: {
+              color: { value: "#3b82f6" },
+              move: {
+                direction: "none",
+                enable: true,
+                outModes: { default: "bounce" },
+                random: false,
+                speed: 1,
+                straight: false,
+              },
+              number: { density: { enable: true, area: 800 }, value: 80 },
+              opacity: { value: 0.5 },
+              shape: { type: "circle" },
+              size: { value: { min: 1, max: 3 } },
+            },
+            detectRetina: true,
+          }}
+        />
+      )}
+      <div className="relative z-10 h-full w-full flex items-center justify-center p-6">
+        <div className="text-center space-y-6 max-w-4xl mx-auto px-4">
+          <h2 className="text-4xl font-semibold text-gray-100 mb-4 tracking-wide">
+            Welcome to Your Dashboard
+          </h2>
+          <p className="text-gray-400 text-lg">
+            Select a feature from the sidebar to get started
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
-//   return (
-//     <motion.div
-//       className={className}
-//       initial={{ opacity: 0 }}
-//       animate={{ opacity: 1 }}
-//       transition={{ duration: 1 }}
-//     >
-//       {init && (
-//         <Particles
-//           id={id || generatedId}
-//           className="h-full w-full"
-//           options={{
-//             background: {
-//               color: {
-//                 value: background || "#0d47a1",
-//               },
-//             },
-//             fullScreen: {
-//               enable: false,
-//               zIndex: 1,
-//             },
-//             fpsLimit: 120,
-//             interactivity: {
-//               events: {
-//                 onClick: {
-//                   enable: true,
-//                   mode: "push",
-//                 },
-//                 onHover: {
-//                   enable: false,
-//                   mode: "repulse",
-//                 },
-//                 resize: true,
-//               },
-//               modes: {
-//                 push: {
-//                   quantity: 4,
-//                 },
-//                 repulse: {
-//                   distance: 200,
-//                   duration: 0.4,
-//                 },
-//               },
-//             },
-//             particles: {
-//               move: {
-//                 enable: true,
-//                 speed: {
-//                   min: 0.1,
-//                   max: 1,
-//                 },
-//                 direction: "none",
-//               },
-//               number: {
-//                 value: particleDensity || 120,
-//               },
-//               color: {
-//                 value: particleColor || "#ffffff",
-//               },
-//               size: {
-//                 value: {
-//                   min: minSize || 1,
-//                   max: maxSize || 3,
-//                 },
-//               },
-//               opacity: {
-//                 value: {
-//                   min: 0.1,
-//                   max: 1,
-//                 },
-//                 animation: {
-//                   enable: true,
-//                   speed: speed || 4,
-//                 },
-//               },
-//             },
-//             detectRetina: true,
-//           }}
-//         />
-//       )}
-//     </motion.div>
-//   );
-// };
-
-// export default Dashboard;
+export default DashboardHome;

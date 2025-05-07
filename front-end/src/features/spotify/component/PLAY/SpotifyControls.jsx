@@ -2,7 +2,7 @@ import {
     pauseTrack, 
     resumeTrack, 
     skipTrack 
-  } from '../Services/spotifyService';
+  } from '../../Services/spotifyService';
   
   function SpotifyControls({ deviceId, isPlaying }) {
     const handlePlayPause = async () => {

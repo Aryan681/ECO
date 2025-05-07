@@ -5,7 +5,7 @@ import {
   playTrack,
   addToPlaylist,
   removeFromPlaylist
-} from '../Services/spotifyService';
+} from '../../Services/spotifyService';
 
 function TrackSelector({ deviceId }) {
   const [playlists, setPlaylists] = useState([]);

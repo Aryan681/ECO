@@ -67,8 +67,11 @@ const features = [
 const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeFeature, setActiveFeature] = useState("dashboard");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const pathSegment = location.pathname.split("/")[2] || "dashboard";
+  const [activeFeature, setActiveFeature] = useState(pathSegment);
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [particlesInit, setParticlesInit] = useState(false);
   const sidebarRef = useRef();
   const typeRef = useRef();
@@ -246,7 +249,7 @@ const DashboardLayout = () => {
   return (
     <div className="flex h-screen bg-gray-950 text-gray-100 overflow-hidden">
       {/* Sidebar Navigation */}
-      <aside
+      <motion.aside
         ref={sidebarRef}
         className={`
           ${isSidebarCollapsed ? "w-20" : "w-64"}
@@ -269,7 +272,6 @@ const DashboardLayout = () => {
                 <span className="text-gray-100">Eco</span>
                 <span className="text-cyan-400">&gt;</span>
               </h1>
-             
             </button>
           ) : (
             <>
@@ -282,7 +284,6 @@ const DashboardLayout = () => {
                   <span className="text-gray-100">Eco</span>
                   <span className="text-cyan-400">&gt;</span>
                 </h1>
-                
               </button>
 
               <p className="text-gray-400 text-sm font-mono mt-1">
@@ -294,7 +295,7 @@ const DashboardLayout = () => {
           )}
         </div>
         {/* Collapse/Expand Button */}
-        
+
         <nav className="flex-1 overflow-hidden">
           <ul className="space-y-2">
             {features.map((feature) => (
@@ -352,18 +353,18 @@ const DashboardLayout = () => {
             {!isSidebarCollapsed && <span className="truncate">Logout</span>}
           </button>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content Area */}
       <main
         className={`
           flex-1 overflow-y-auto transition-all duration-300
-          ${isSidebarCollapsed ? "ml-20" : "ml-61"}
+          ${isSidebarCollapsed ? "ml-20" : "ml-0"}
           h-full relative
         `}
       >
         <div className="relative z-10 h-full w-full">
-          {activeFeature === "dashboard" ? <DashboardContent /> : <Outlet />}
+          <Outlet />
         </div>
 
         {/* Footer */}
