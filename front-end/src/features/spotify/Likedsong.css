@@ -1,0 +1,19 @@
+/* Tailwind example for the playlist card */
+.playlist-card {
+  @apply bg-gray-800 hover:bg-gray-700 cursor-pointer p-4 rounded-lg shadow-md transition-all flex flex-col;
+}
+.playlist-image {
+  @apply w-full h-40 bg-gray-900 flex items-center justify-center rounded-md overflow-hidden;
+}
+.playlist-image img {
+  @apply w-full h-full object-cover;
+}
+.playlist-info {
+  @apply mt-3;
+}
+.playlist-info h4 {
+  @apply text-white font-bold truncate;
+}
+.playlist-info p {
+  @apply text-sm text-gray-400;
+}

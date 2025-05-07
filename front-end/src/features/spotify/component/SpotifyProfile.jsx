@@ -5,6 +5,7 @@ import {
   getLikedSongs,
 } from "../Services/spotifyService";
 import PlaylistCard from "../component/playlist/PlaylistCard";
+import LikedSongsCard from "../component/playlist/LikedSongsCard";
 import "../SpotifyProfile.css";
 
 export default function SpotifyProfile({ token }) {
@@ -23,7 +24,6 @@ export default function SpotifyProfile({ token }) {
 
         setProfile(profileData.profile);
 
-        // Create a playlist-like object for liked songs
         const likedPlaylist = {
           id: "liked-songs",
           name: "Liked Songs",
@@ -38,11 +38,10 @@ export default function SpotifyProfile({ token }) {
           tracks: {
             total: likedData.cleanedTracks.length,
           },
-          isLikedSongs: true, // flag to differentiate in UI
+          isLikedSongs: true,
         };
 
         setPlaylists([likedPlaylist, ...playlistData]);
-
       } catch (error) {
         console.error("Error fetching Spotify data:", error);
       } finally {
@@ -124,19 +123,21 @@ export default function SpotifyProfile({ token }) {
       <div className="playlist-section mt-8">
         <h3 className="text-white text-xl font-bold mb-4">Your Playlists</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {playlists.map((playlist) => (
-            <PlaylistCard
-              key={playlist.id}
-              playlist={playlist}
-              onPlay={() =>
-                console.log(
-                  playlist.isLikedSongs
-                    ? "Play Liked Songs"
-                    : `Play ${playlist.name}`
-                )
-              }
-            />
-          ))}
+          {playlists.map((playlist) =>
+            playlist.isLikedSongs ? (
+              <LikedSongsCard
+                key={playlist.id}
+                likedPlaylist={playlist}
+                onPlay={() => console.log("Play Liked Songs")}
+              />
+            ) : (
+              <PlaylistCard
+                key={playlist.id}
+                playlist={playlist}
+                onPlay={() => console.log(`Play ${playlist.name}`)}
+              />
+            )
+          )}
         </div>
       </div>
     </div>

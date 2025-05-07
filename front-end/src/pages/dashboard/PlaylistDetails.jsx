@@ -1,12 +1,13 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getPlaylistTracks ,getUserPlaylists} from "../../features/spotify/Services/spotifyService";
-import { FiMusic } from "react-icons/fi";
+import { FiMusic,FiHeart,FiMoreHorizontal ,FiPlay} from "react-icons/fi";
 
 const PlaylistDetails = () => {
   const { playlistId } = useParams();
   const [tracks, setTracks] = useState([]);
   const [playlist, setPlaylist] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const fetchPlaylistData = async () => {
@@ -62,10 +63,19 @@ const PlaylistDetails = () => {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-4 mb-6 flex-wrap">
-        <button className="bg-green-500 hover:bg-green-400 text-black rounded-full p-3 shadow-lg transform hover:scale-105 transition">
-          <FiMusic className="text-xl" />
+       {/* Controls */}
+       <div className="flex items-center gap-4 mb-6 flex-wrap">
+        <button
+          className="bg-green-500 hover:bg-green-400 text-black rounded-full p-3 shadow-lg transform hover:scale-105 transition"
+          onClick={() => setIsPlaying(!isPlaying)}
+        >
+          <FiPlay className={`text-xl ${isPlaying ? "hidden" : "block"}`} />
+        </button>
+        <button className="text-gray-400 hover:text-white">
+          <FiHeart className="text-2xl" />
+        </button>
+        <button className="text-gray-400 hover:text-white">
+          <FiMoreHorizontal className="text-2xl" />
         </button>
       </div>
 

@@ -6,7 +6,7 @@ export default function PlaylistCard({ playlist, onPlay }) {
   const handleClick = () => {
     navigate(`/dashboard/playlist/${playlist.id}`);
 
-  };
+  }; 
 
     return (
       <div className="playlist-card"  onClick={handleClick}>

@@ -8,6 +8,7 @@ import RegisterPage from "../pages/Auth/RegisterPage";
 import DashboardLayout from "../layouts/DashboardLayout/DashboardLayout";
 import SpotifyPage from "../pages/dashboard/SpotifyPage";
 import PlaylistDetails from "../pages/dashboard/PlaylistDetails";
+import LikedTracks from "../pages/dashboard/LikedTracks";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -24,6 +25,8 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route path="spotify" element={<SpotifyPage />} />
         <Route path="playlist/:playlistId" element={<PlaylistDetails />} />
+        <Route path="liked" element={<LikedTracks />} />
+
       </Route>
     </Routes>
   );

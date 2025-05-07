@@ -113,8 +113,10 @@ exports.getLikedSongs = async (req, res) => {
         name: item.track.album.name,
         image: item.track.album.images?.[0]?.url || null
       },
+      duration: item.track.duration_ms, // <- Add this line
       added_at: item.added_at
     }));
+    
  
     res.status(200).json({ success: true, cleanedTracks });
   } catch (error) {

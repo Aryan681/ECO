@@ -73,7 +73,7 @@ export const getUserPlaylists = async () => {
     throw error;
   }
 };
-
+ 
 export const getLikedSongs = async (limit = 50, offset = 0) => {
   try {
     const response = await spotifyApi.get("/liked", {
@@ -85,6 +85,7 @@ export const getLikedSongs = async (limit = 50, offset = 0) => {
     throw error;
   }
 };
+
 export const getPlaylistTracks = async (playlistId) => {
   try {
     const response = await spotifyApi.get(`/playlists/${playlistId}/tracks`);
