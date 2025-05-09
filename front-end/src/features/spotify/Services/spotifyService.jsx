@@ -55,6 +55,21 @@ export const initiateSpotifyLogin = async () => {
   }
 };
 
+export const refreshAccessToken = async (refreshToken) => {
+  const response = await fetch("http://localhost:3000/api/spotify/refresh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) throw new Error("Failed to refresh token");
+
+  const data = await response.json();
+  localStorage.setItem("spotifyAccessToken", data.accessToken);
+  return data.accessToken;
+};
+
+
 export const getSpotifyProfile = async () => {
   try {
     const response = await spotifyApi.get("/profile");
@@ -102,6 +117,39 @@ export const getPlaylistTracks = async (playlistId) => {
     );
   }
 };
+
+export const setVolume = async (volume) => {
+  const response = await fetch("http://localhost:5000/api/spotify/volume", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      // Send access token as cookie or already managed by your auth middleware
+    },
+    credentials: "include", // if you're using cookies for auth
+    body: JSON.stringify({ volume }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to set volume");
+  }
+};
+
+export const getCurrentPlaybackState = async () => {
+  const response = await fetch("http://localhost:5000/api/spotify/player", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include", // again if using cookies/session
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to get playback state");
+  }
+
+  return response.json();
+};
+
 
 export const playTrack = async (trackUri, deviceId) => {
   try {

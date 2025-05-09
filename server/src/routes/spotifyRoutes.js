@@ -1,33 +1,107 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const spotifyController = require('../controllers/spotifyController');
-const { authenticate ,requireSpotifyConnection} = require('../middlewares/auth');
+const spotifyController = require("../controllers/spotifyController");
+const {
+  authenticate,
+  requireSpotifyConnection,
+} = require("../middlewares/auth");
 
-router.get('/login', authenticate, spotifyController.initiateSpotifyLogin);
-router.get('/callback', spotifyController.handleSpotifyCallback);
+router.get("/login", authenticate, spotifyController.initiateSpotifyLogin);
+router.get("/callback", spotifyController.handleSpotifyCallback);
 
-router.get('/profile', authenticate, requireSpotifyConnection, spotifyController.getSpotifyProfile);
+router.get(
+  "/profile",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.getSpotifyProfile
+);
 
-router.get('/playlists', authenticate, requireSpotifyConnection, spotifyController.getUserPlaylists);
-router.get('/liked', authenticate, requireSpotifyConnection, spotifyController.getLikedSongs);
+router.get(
+  "/playlists",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.getUserPlaylists
+);
+router.get(
+  "/liked",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.getLikedSongs
+);
 
+router.post(
+  "/play",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.playTrack
+);
+router.put(
+  "/pause",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.pauseTrack
+);
+router.put(
+  "/resume",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.resumeTrack
+);
 
-router.post('/play', authenticate, requireSpotifyConnection, spotifyController.playTrack);
-router.put('/pause', authenticate, requireSpotifyConnection, spotifyController.pauseTrack);
-router.put('/resume', authenticate, requireSpotifyConnection, spotifyController.resumeTrack);
+router.post("/track", authenticate, spotifyController.skipTrack);
 
-router.post('/track', authenticate, spotifyController.skipTrack);
+router.post(
+  "/like",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.likeTrack
+);
+router.post(
+  "/playlist/add",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.addTrackToPlaylist
+);
 
-router.post('/like', authenticate, requireSpotifyConnection,spotifyController.likeTrack);
-router.post('/playlist/add', authenticate, requireSpotifyConnection,spotifyController.addTrackToPlaylist);
+router.post(
+  "/unlike",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.unlikeTrack
+);
+router.post(
+  "/playlist/remove",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.removeTrackFromPlaylist
+);
 
-router.post('/unlike', authenticate, requireSpotifyConnection,spotifyController.unlikeTrack);
-router.post('/playlist/remove', authenticate, requireSpotifyConnection,spotifyController.removeTrackFromPlaylist);
-
-router.get('/playlists/:playlistId/tracks', 
-    authenticate, 
-    requireSpotifyConnection, 
-    spotifyController.getPlaylistTracks
-  );
+router.get(
+  "/playlists/:playlistId/tracks",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.getPlaylistTracks
+);
 module.exports = router;
-  
+// New routes for volume and playback state
+
+router.put(
+  "/volume",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.setVolume
+);
+
+router.get(
+  "/player",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.getCurrentPlaybackState
+);
+
+router.post(
+  "/refresh",
+  authenticate,
+  requireSpotifyConnection,
+  spotifyController.handleRefreshToken
+)

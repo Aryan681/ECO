@@ -2,11 +2,11 @@ const axios = require("axios");
 const qs = require("qs");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const  redisClient =require( "../utils/redisClient"); 
+const redisClient = require("../utils/redisClient");
 const { callSpotifyApi } = require("../utils/spotifyApiClient"); // use your correct path
 
-const API_BASE = 'http://localhost:3000/api/spotify';
-const CACHE_PREFIX = 'spotify:';
+const API_BASE = "http://localhost:3000/api/spotify";
+const CACHE_PREFIX = "spotify:";
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
@@ -16,8 +16,8 @@ const getCacheKey = (endpoint, params = {}) => {
   const paramString = Object.entries(params)
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([key, value]) => `${key}=${value}`)
-    .join('&');
-  return `${CACHE_PREFIX}${endpoint}${paramString ? `?${paramString}` : ''}`;
+    .join("&");
+  return `${CACHE_PREFIX}${endpoint}${paramString ? `?${paramString}` : ""}`;
 };
 
 const SCOPES = [
@@ -105,7 +105,12 @@ exports.exchangeTokenAndSaveUser = async (code, userId) => {
     create: { userId, ...spotifyData },
   });
 
-  return data.id;
+  return {
+    spotifyId: data.id,
+    accessToken: access_token,
+    refreshToken: refresh_token, 
+    expiresIn: expires_in,
+  };
 };
 
 // All API methods use callSpotifyApi now:
@@ -134,107 +139,126 @@ exports.pauseTrack = async (userId) =>
 
 exports.resumeTrack = async (userId) => exports.playTrack(userId);
 
-
 // ✅ Profile (cached)
 exports.fetchSpotifyProfile = async (userId) => {
   const cacheKey = getCacheKey(`profile:${userId}`);
-  return redisClient.getWithCache(cacheKey, async () => {
-    return await callSpotifyApi(userId, async (token) => {
-      const res = await axios.get("https://api.spotify.com/v1/me", {
-        headers: { Authorization: `Bearer ${token}` },
+  return redisClient.getWithCache(
+    cacheKey,
+    async () => {
+      return await callSpotifyApi(userId, async (token) => {
+        const res = await axios.get("https://api.spotify.com/v1/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return res.data;
       });
-      return res.data;
-    });
-  }, 1800); // 30 mins
+    },
+    1800
+  ); // 30 mins
 };
- 
+
 // ✅ Playlists (cached)
 exports.fetchUserPlaylists = async (userId) => {
   const cacheKey = getCacheKey(`playlists:${userId}`);
-  return redisClient.getWithCache(cacheKey, async () => {
-    return await callSpotifyApi(userId, async (token) => {
-      const res = await axios.get("https://api.spotify.com/v1/me/playlists", {
-        headers: { Authorization: `Bearer ${token}` },
+  return redisClient.getWithCache(
+    cacheKey,
+    async () => {
+      return await callSpotifyApi(userId, async (token) => {
+        const res = await axios.get("https://api.spotify.com/v1/me/playlists", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return res.data;
       });
-      return res.data;
-    });
-  }, 3600); // 1 hour
+    },
+    3600
+  ); // 1 hour
 };
 
 // ✅ Playlist Tracks (cached)
 exports.getPlaylistTracks = async (userId, playlistId) => {
   const cacheKey = getCacheKey(`playlist-tracks:${userId}:${playlistId}`);
-  return redisClient.getWithCache(cacheKey, async () => {
-    return await callSpotifyApi(userId, async (token) => {
-      const allTracks = [];
-      const limit = 100;
-      let offset = 0;
-      let totalFetched = 0;
+  return redisClient.getWithCache(
+    cacheKey,
+    async () => {
+      return await callSpotifyApi(userId, async (token) => {
+        const allTracks = [];
+        const limit = 100;
+        let offset = 0;
+        let totalFetched = 0;
 
-      while (totalFetched < 300) {
-        const response = await axios.get(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          params: {
-            limit,
-            offset,
-            fields: "items(track(id,name,uri,duration_ms,artists(name),album(name,images))),next",
-          },
-        });
+        while (totalFetched < 300) {
+          const response = await axios.get(
+            `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              params: {
+                limit,
+                offset,
+                fields:
+                  "items(track(id,name,uri,duration_ms,artists(name),album(name,images))),next",
+              },
+            }
+          );
 
-        const tracks = response.data.items.map((item) => ({
-          id: item.track.id,
-          name: item.track.name,
-          uri: item.track.uri,
-          duration: item.track.duration_ms,
-          artists: item.track.artists.map((artist) => artist.name),
-          album: {
-            name: item.track.album.name,
-            image: item.track.album.images?.[0]?.url || null,
-          },
-          added_at: new Date().toISOString(),
-        }));
+          const tracks = response.data.items.map((item) => ({
+            id: item.track.id,
+            name: item.track.name,
+            uri: item.track.uri,
+            duration: item.track.duration_ms,
+            artists: item.track.artists.map((artist) => artist.name),
+            album: {
+              name: item.track.album.name,
+              image: item.track.album.images?.[0]?.url || null,
+            },
+            added_at: new Date().toISOString(),
+          }));
 
-        allTracks.push(...tracks);
-        totalFetched += tracks.length;
+          allTracks.push(...tracks);
+          totalFetched += tracks.length;
 
-        if (!response.data.next || tracks.length < limit) break;
-        offset += limit;
-      }
+          if (!response.data.next || tracks.length < limit) break;
+          offset += limit;
+        }
 
-      return allTracks.slice(0, 300);
-    });
-  }, 3600); // 1 hour
+        return allTracks.slice(0, 300);
+      });
+    },
+    3600
+  ); // 1 hour
 };
 
 // ✅ Liked Songs (cached)
 exports.fetchLikedSongs = async (userId) => {
   const cacheKey = getCacheKey(`liked-songs:${userId}`);
-  return redisClient.getWithCache(cacheKey, async () => {
-    return await callSpotifyApi(userId, async (token) => {
-      let allTracks = [];
-      let limit = 50;
-      let offset = 0;
-      let hasNext = true;
+  return redisClient.getWithCache(
+    cacheKey,
+    async () => {
+      return await callSpotifyApi(userId, async (token) => {
+        let allTracks = [];
+        let limit = 50;
+        let offset = 0;
+        let hasNext = true;
 
-      while (hasNext) {
-        const res = await axios.get("https://api.spotify.com/v1/me/tracks", {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { limit, offset },
-        });
+        while (hasNext) {
+          const res = await axios.get("https://api.spotify.com/v1/me/tracks", {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { limit, offset },
+          });
 
-        const data = res.data;
-        allTracks = allTracks.concat(data.items);
+          const data = res.data;
+          allTracks = allTracks.concat(data.items);
 
-        offset += limit;
-        hasNext = data.next !== null;
-      }
+          offset += limit;
+          hasNext = data.next !== null;
+        }
 
-      return { items: allTracks };
-    });
-  }, 1800); // 30 mins
+        return { items: allTracks };
+      });
+    },
+    1800
+  ); // 30 mins
 };
 
 exports.nextTrack = async (userId) =>
