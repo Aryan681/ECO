@@ -47,4 +47,4 @@ redisClient.getWithCache = async (key, fetchFn, ttl = 3600) => {
   }
 })();
 
-module.exports = redisClient;
+module.exports = redisClient;  
