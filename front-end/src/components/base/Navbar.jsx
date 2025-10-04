@@ -141,7 +141,7 @@ const Navbar = () => {
 
   return (
     <header
-      className={`fixed top-3 left-1/2 -translate-x-1/2 w-[90%] max-w-6xl rounded-b-2xl z-50 transition-all duration-300 border ${
+      className={`fixed top-3 left-1/2 -translate-x-1/2 w-[90%] max-w-6xl rounded-3xl z-50 transition-all duration-300 border ${
         scrolled
           ? "bg-gray-950/95 backdrop-blur-md border-white/40 py-4"
           : "bg-gray-950/80 border-white/20 py-4"
@@ -152,13 +152,13 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center group">
           <span className="font-mono text-2xl text-cyan-400 mr-1">$</span>
-          <span className="font-mono font-bold text-3xl text-white group-hover:text-cyan-400 transition duration-300">
+          <span className="font-mono font-bold text-2xl text-white group-hover:text-cyan-400 transition duration-300">
             Eco<span className="logo-cursor">_</span>
           </span>
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center space-x-6">
+        <nav className="hidden md:flex ml-8  items-center space-x-6">
           {renderDesktopLinks()}
         </nav>
 
@@ -186,7 +186,7 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden mt-3 py-3 bg-gray-900 border border-gray-800 rounded-lg shadow-xl">
-          <nav className="flex flex-col space-y-3 px-4">
+          <nav className="flex flex-col  space-y-3 px-4">
             {NAV_LINKS.map(({ label, path }) => (
               <Link
                 key={path}

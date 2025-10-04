@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import HeroSection from '../containers/hero/HeroSection';
+import FeaturefHilight from "../containers/feat/FeaturtefHighlight"
 
 
 const HomePage = () => {
@@ -11,6 +12,7 @@ const HomePage = () => {
   return (
     <div className="homepage">
       <HeroSection />
+      <FeaturefHilight/>
    
     </div>
   );

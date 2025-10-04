@@ -2,8 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import FeatureCards from "../../components/hero/FeaturtefHighlight";
-
+import Squares from "./Back";
 const HeroSection = () => {
   const sectionRef = useRef(null);
   const headingRef = useRef(null);
@@ -13,133 +12,118 @@ const HeroSection = () => {
   const terminalRef = useRef(null);
   const typeRef = useRef(null);
 
-  useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
+useEffect(() => {
+  gsap.registerPlugin(ScrollTrigger);
 
-    // Animate the background pattern
-
-
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-
-    const typeLine = (lineEl, text, delay) => {
-      let index = 0;
-      const type = () => {
-        if (index <= text.length) {
-          lineEl.textContent = text.substring(0, index);
-          index++;
-          setTimeout(type, 30);
-        }
-      };
-      setTimeout(type, delay);
-    };
-
-    if (terminalRef.current) {
-      const lines = terminalRef.current.querySelectorAll(".terminal-line");
-      lines.forEach((line, i) => {
-        const original = line.textContent;
-        line.textContent = "";
-        typeLine(line, original, i * 800);
-      });
-    }
-
-    // Main animations
-    tl.fromTo(
-      headingRef.current,
-      { y: 100, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1 }
-    )
-      .fromTo(
-        subheadingRef.current,
-        { y: 50, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8 },
-        "-=0.6"
-      )
-      .fromTo(
-        ctaRef.current,
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6 },
-        "-=0.4"
-      )
-      .fromTo(
-        imageRef.current,
-        { scale: 0.8, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 1.2 },
-        "-=0.8"
-      );
-
-    ScrollTrigger.create({
-      trigger: sectionRef.current,
-      start: "top top",
-      end: "bottom top",
-      scrub: true,
-      onUpdate: (self) => {
-        gsap.to(imageRef.current, {
-          y: self.progress * 100,
-          duration: 0.1,
-        });
-      },
-    });
-
-    const words = ["workspace", "cloud", "ide", "runtime", "terminal"];
-    let wordIndex = 0;
-    let charIndex = 0;
-    let typingForward = true;
-
-    const typeWriterLoop = () => {
-      if (!typeRef.current) return;
-
-      const word = words[wordIndex];
-      if (typingForward) {
-        typeRef.current.textContent = word.substring(0, charIndex + 1);
-        charIndex++;
-        if (charIndex === word.length) {
-          typingForward = false;
-          setTimeout(typeWriterLoop, 1200);
-          return;
-        }
-      } else {
-        typeRef.current.textContent = word.substring(0, charIndex - 1);
-        charIndex--;
-        if (charIndex === 0) {
-          typingForward = true;
-          wordIndex = (wordIndex + 1) % words.length;
-        }
+  const typeLine = (lineEl, text, delay) => {
+    let index = 0;
+    const type = () => {
+      if (index <= text.length) {
+        lineEl.textContent = text.substring(0, index);
+        index++;
+        setTimeout(type, 30);
       }
-
-      setTimeout(typeWriterLoop, typingForward ? 100 : 40);
     };
+    setTimeout(type, delay);
+  };
 
-    typeWriterLoop();
+  if (terminalRef.current) {
+    const lines = terminalRef.current.querySelectorAll(".terminal-line");
+    lines.forEach((line, i) => {
+      const original = line.textContent;
+      line.textContent = "";
+      typeLine(line, original, i * 800);
+    });
+  }
 
-    return () => {
-      tl.kill();
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-    };
-  }, []);
+  // Main timeline with ScrollTrigger
+  const tl = gsap.timeline({
+    defaults: { ease: "power3.out" },
+    scrollTrigger: {
+      trigger: sectionRef.current,
+      start: "top 80%",    // when top of section hits 80% of viewport
+      end: "bottom 40%",
+      toggleActions: "play reverse play reverse", // play forward and reverse when scrolling back
+      // markers: true,
+    },
+  });
+
+  tl.fromTo(
+    headingRef.current,
+    { x: -200, opacity: 0 },
+    { x: 0, opacity: 1, duration: 1 ,}
+  )
+    .fromTo(
+      subheadingRef.current,
+      { y: 50, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.8 },
+      "-=0.6"
+    )
+    .fromTo(
+      ctaRef.current,
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6 },
+      "-=0.4"
+    )
+    .fromTo(
+      imageRef.current,
+      { scale: 0.8, opacity: 0, y: 50 },
+      { scale: 1, opacity: 1, y: 0, duration: 1.2 },
+      "-=0.8"
+    );
+
+  // Typing effect loop
+  const words = ["workspace", "cloud", "ide", "runtime", "terminal"];
+  let wordIndex = 0;
+  let charIndex = 0;
+  let typingForward = true;
+
+  const typeWriterLoop = () => {
+    if (!typeRef.current) return;
+    const word = words[wordIndex];
+    if (typingForward) {
+      typeRef.current.textContent = word.substring(0, charIndex + 1);
+      charIndex++;
+      if (charIndex === word.length) {
+        typingForward = false;
+        setTimeout(typeWriterLoop, 1200);
+        return;
+      }
+    } else {
+      typeRef.current.textContent = word.substring(0, charIndex - 1);
+      charIndex--;
+      if (charIndex === 0) {
+        typingForward = true;
+        wordIndex = (wordIndex + 1) % words.length;
+      }
+    }
+    setTimeout(typeWriterLoop, typingForward ? 100 : 40);
+  };
+
+  typeWriterLoop();
+
+  return () => {
+    tl.kill();
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+  };
+}, []);
+
 
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden min-h-screen bg-gray-950 flex items-center border-t border-gray-800"
+      className="relative overflow-hidden min-h-[48rem] bg-gray-950 flex items-center border-t border-gray-800"
     >
       {/* moving  background */}
-      <div
-        className="absolute inset-0 opacity-[0.1] overflow-hidden"
-      >
-        <div
-          className="absolute inset-0 w-[200%] h-[200%] bg-[length:40px_40px] bg-repeat"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, #22d3ee 1px, transparent 1px),
-              linear-gradient(to bottom, #22d3ee 1px, transparent 1px),
-              linear-gradient(to right, #34d399 1px, transparent 1px),
-              linear-gradient(to bottom, #34d399 1px, transparent 1px)
-            `,
-            backgroundPosition: `
-              0 0, 0 0, 20px 20px, 20px 20px
-            `,
-          }}
-        ></div>
+     <div className="absolute inset-0 z-0 opacity-[0.1] overflow-hidden">
+        <Squares
+          mouseEventTarget={sectionRef} 
+          speed={0.2}
+          squareSize={60}
+          direction="down"
+          borderColor="#fff"
+          hoverFillColor="#06b6d9" 
+        />
       </div>
 
       {/* Glow effects */}
@@ -179,7 +163,6 @@ const HeroSection = () => {
               >
                 $ getStart eco
               </Link>
-             
             </div>
           </div>
 
@@ -244,8 +227,6 @@ const HeroSection = () => {
           </div> */}
         </div>
       </div>
-
-     
     </section>
   );
 };
