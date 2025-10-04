@@ -79,6 +79,7 @@ export const getSpotifyProfile = async () => {
     throw error;
   }
 };
+
 export const getUserPlaylists = async () => {
   try {
     const response = await spotifyApi.get("/playlists");
@@ -118,21 +119,6 @@ export const getPlaylistTracks = async (playlistId) => {
   }
 };
 
-export const setVolume = async (volume) => {
-  const response = await fetch("http://localhost:5000/api/spotify/volume", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // Send access token as cookie or already managed by your auth middleware
-    },
-    credentials: "include", // if you're using cookies for auth
-    body: JSON.stringify({ volume }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to set volume");
-  }
-};
 
 export const getCurrentPlaybackState = async () => {
   const response = await fetch("http://localhost:5000/api/spotify/player", {
@@ -187,51 +173,7 @@ export const skipTrack = async (direction = "next") => {
   }
 };
 
-export const likeTrack = async (trackId) => {
-  try {
-    await spotifyApi.post("/like", { trackId });
-  } catch (error) {
-    console.error("Error liking track:", error);
-    throw error;
-  }
-};
 
-export const unlikeTrack = async (trackId) => {
-  try {
-    await spotifyApi.post("/unlike", { trackId });
-  } catch (error) {
-    console.error("Error unliking track:", error);
-    throw error;
-  }
-};
 
-export const addToPlaylist = async (playlistId, trackUri) => {
-  try {
-    await spotifyApi.post("/playlist/add", { playlistId, trackUri });
-  } catch (error) {
-    console.error("Error adding to playlist:", error);
-    throw error;
-  }
-};
 
-export const removeFromPlaylist = async (playlistId, trackUri) => {
-  try {
-    await spotifyApi.post("/playlist/remove", { playlistId, trackUri });
-  } catch (error) {
-    console.error("Error removing from playlist:", error);
-    throw error;
-  }
-};
 
-// Optional: Add method to check if track is liked
-export const isTrackLiked = async (trackId) => {
-  try {
-    const response = await spotifyApi.get("/is-liked", {
-      params: { trackId },
-    });
-    return response.data.liked;
-  } catch (error) {
-    console.error("Error checking track like status:", error);
-    throw error;
-  }
-};

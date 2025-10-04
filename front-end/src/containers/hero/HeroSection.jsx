@@ -4,7 +4,6 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import FeatureCards from "../../components/hero/FeaturtefHighlight";
 
-
 const HeroSection = () => {
   const sectionRef = useRef(null);
   const headingRef = useRef(null);
@@ -13,20 +12,12 @@ const HeroSection = () => {
   const imageRef = useRef(null);
   const terminalRef = useRef(null);
   const typeRef = useRef(null);
-  const patternRef = useRef(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
     // Animate the background pattern
-    gsap.to(patternRef.current, {
-      x: 100,
-      y: 50,
-      duration: 40,
-      repeat: -1,
-      yoyo: true,
-      ease: "none"
-    });
+
 
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
@@ -131,12 +122,12 @@ const HeroSection = () => {
       ref={sectionRef}
       className="relative overflow-hidden min-h-screen bg-gray-950 flex items-center border-t border-gray-800"
     >
-      {/* Infinite moving code pattern background */}
-      <div 
-        ref={patternRef}
+      {/* moving  background */}
+      <div
         className="absolute inset-0 opacity-[0.1] overflow-hidden"
       >
-        <div className="absolute inset-0 w-[200%] h-[200%] bg-[length:40px_40px] bg-repeat"
+        <div
+          className="absolute inset-0 w-[200%] h-[200%] bg-[length:40px_40px] bg-repeat"
           style={{
             backgroundImage: `
               linear-gradient(to right, #22d3ee 1px, transparent 1px),
@@ -188,27 +179,7 @@ const HeroSection = () => {
               >
                 $ getStart eco
               </Link>
-              <Link
-                to="#terminal"
-                className="px-8 py-3 bg-transparent border border-gray-600 hover:border-cyan-400 text-gray-400 hover:text-cyan-400 font-mono rounded transition duration-300 text-center"
-              >
-                git clone demo
-              </Link>
-            </div>
-
-            <div className="pt-6 text-gray-500 font-mono text-sm flex items-center gap-4">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xs">
-                  TS
-                </div>
-                <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xs">
-                  PY
-                </div>
-                <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xs">
-                  GO
-                </div>
-              </div>
-              <span className="text-cyan-400">25k+</span> active deployments
+             
             </div>
           </div>
 
@@ -268,22 +239,13 @@ const HeroSection = () => {
           className="w-full max-w-screen-2xl mx-auto px-6 sm:px-10 lg:px-20 mt-28"
           id="features"
         >
-          <div className="flex flex-wrap justify-center gap-6">
+          {/* <div className="flex flex-wrap justify-center gap-6">
             <FeatureCards />
-          </div>
+          </div> */}
         </div>
       </div>
 
-      {/* Binary divider */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gray-900/80 border-t border-gray-800 overflow-hidden">
-        <div className="absolute inset-0 flex items-center font-mono text-xs text-gray-600 whitespace-nowrap">
-          {Array(100)
-            .fill(
-              "01101000 01101001 00100000 00111101 00100000 01100101 01100011 01101111 00101000 00101001 00100000 "
-            )
-            .join("")}
-        </div>
-      </div>
+     
     </section>
   );
 };

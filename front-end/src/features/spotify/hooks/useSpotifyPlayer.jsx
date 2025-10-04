@@ -5,6 +5,7 @@ export default function useSpotifyPlayer(token) {
   const [deviceId, setDeviceId] = useState(null);
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isReady, setIsReady] = useState(false); // New state for device readiness
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -28,11 +29,16 @@ export default function useSpotifyPlayer(token) {
         playerInstance.addListener('ready', ({ device_id }) => {
           console.log('Ready with Device ID', device_id);
           setDeviceId(device_id);
+          setIsReady(true); // Mark device as ready
           setError(null);
+          
+          // Transfer playback to this device automatically
+          transferPlayback(device_id, token);
         });
 
         playerInstance.addListener('not_ready', ({ device_id }) => {
           console.log('Device ID has gone offline', device_id);
+          setIsReady(false);
         });
 
         playerInstance.addListener('player_state_changed', state => {
@@ -53,7 +59,11 @@ export default function useSpotifyPlayer(token) {
           setError(message);
         });
 
-        playerInstance.connect().catch(err => {
+        playerInstance.connect().then(success => {
+          if (success) {
+            console.log('Connected to Spotify player successfully');
+          }
+        }).catch(err => {
           setError(err.message);
         });
       };
@@ -72,5 +82,28 @@ export default function useSpotifyPlayer(token) {
     };
   }, [token]);
 
-  return { player, deviceId, currentTrack, isPlaying, error };
+  // Helper function to transfer playback to this device
+  const transferPlayback = async (deviceId, token) => {
+    try {
+      const response = await fetch('https://api.spotify.com/v1/me/player', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          device_ids: [deviceId],
+          play: false
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to transfer playback');
+      }
+    } catch (err) {
+      console.error('Transfer playback error:', err);
+    }
+  };
+
+  return { player, deviceId, currentTrack, isPlaying, isReady, error };
 }
